@@ -55,3 +55,8 @@ backend/data/uploads/
 # ===============================
 .ipynb_checkpoints/
 
+# ===============================
+# Next.js
+# ===============================
+.next/
+node_modules/
