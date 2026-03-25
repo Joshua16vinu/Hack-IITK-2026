@@ -20,13 +20,9 @@ Thumbs.db
 .idea/
 
 # ===============================
-# Models (NEVER commit)
+# Uploaded Files
 # ===============================
-models/
-*.gguf
-*.bin
-*.pt
-*.safetensors
+backend/uploads/
 
 # ===============================
 # Vector Database (ChromaDB)

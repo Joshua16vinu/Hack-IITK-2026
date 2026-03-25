@@ -1,33 +1,47 @@
-from flask import Flask
-from flask_cors import CORS
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 import requests
 import time
+import os
+import uvicorn
 
-from routes.upload_route import upload_bp
+from constants import UPLOAD_FOLDER
+from routes.upload_route import upload_router
 
 
-app = Flask(__name__)
-CORS(app)
+app = FastAPI()
 
-@app.route('/')
-def health_check():
-    return 'Backend is running...'
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.route('/check-llm')
-def check_llm():
+
+@app.on_event("startup")
+async def startup_event():
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.get('/')
+async def health_check():
+    return {'message': 'Backend is running...'}
+
+@app.get('/check-llm')
+async def check_llm():
     try:
         requests.get("http://localhost:11434")
-        return "LLM is running..."
+        return {'message': 'LLM is running...'}
     except:
         subprocess.Popen(["ollama", "serve"])
         time.sleep(3)
-        return "LLM is starting..."
+        return {'message': 'LLM is starting...'}
+
+app.include_router(upload_router, prefix='/api')
 
 
 if __name__ == '__main__':
-    app.register_blueprint(upload_bp, url_prefix='/api')
-    # app.register_blueprint(gaps_bp, url_prefix='/api')
-    # app.register_blueprint(revision_bp, url_prefix='/api')
-
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    uvicorn.run(app)

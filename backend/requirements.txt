@@ -1,7 +1,9 @@
-flask
-flask_cors
+fastapi
+uvicorn[standard]
+python-multipart
 chromadb==1.4.1
 transformers==5.1.0
 torch==2.10.0
 numpy==2.4.2
 ollama==0.6.1
+pdfplumber
