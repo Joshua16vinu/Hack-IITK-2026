@@ -8,6 +8,7 @@ import uvicorn
 
 from constants import UPLOAD_FOLDER
 from routes.upload_route import upload_router
+from routes.revision_route import revision_router
 
 
 app = FastAPI()
@@ -41,6 +42,7 @@ async def check_llm():
         return {'message': 'LLM is starting...'}
 
 app.include_router(upload_router, prefix='/api')
+app.include_router(revision_router, prefix='/api')
 
 
 if __name__ == '__main__':

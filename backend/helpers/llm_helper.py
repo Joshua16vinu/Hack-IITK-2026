@@ -56,35 +56,38 @@ def stream_llm(prompt: str) -> Iterator[str]:
     print(prompt)
     print("==============================\n")
 
-    response = ollama.chat(
-        model=MODEL_NAME,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "You are a cybersecurity policy analysis assistant. "
-                    "Follow the instructions strictly and return structured output."
-                )
+    try:
+        response = ollama.chat(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a cybersecurity policy analysis assistant. "
+                        "Follow the instructions strictly and return structured output."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            options={
+                "temperature": 0.0,
+                "num_ctx": 8192,
+                "num_predict": -1
             },
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        options={
-            "temperature": 0.0,
-            "num_predict": 900
-        },
-        stream=True
-    )
+            stream=True
+        )
 
-    print("\n===== LLM OUTPUT (STREAM) =====")
-    for part in response:
-        chunk = part.get("message", {}).get("content", "")
-        if chunk:
-            print(chunk, end="", flush=True)
-            yield chunk
-    print("\n===============================\n")
+        for part in response:
+            chunk = part.get("message", {}).get("content", "")
+            if chunk:
+                print(chunk, end="", flush=True)
+                yield chunk
+    except Exception as e:
+        print(f"\n[stream_llm ERROR]: {e}")
+        raise
 
 def call_llm_batch(
     prompts: Iterable[str],
