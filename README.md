@@ -1,6 +1,6 @@
-# PolicyGuard AI Frontend
+# PolicyGuard AI
 
-A Next.js frontend for the Policy Analysis system.
+A Next.js frontend and FastAPI backend system for Policy Analysis using LLMs.
 
 ## Features
 - **Modern UI**: Premium dark mode design with glassmorphism and animations.
@@ -9,38 +9,70 @@ A Next.js frontend for the Policy Analysis system.
 - **Interactive Report**: Collapsible sections for Gap Analysis, Revised Policy, and Roadmap.
 
 ## Prerequisites
-- Node.js & npm installed
-- Backend running on `http://localhost:5000`
+- Bun installed
+- Python 3.8+ installed
+- Ollama installed and running (for local LLM support)
 
-## Installation
+## Setup & Running the Application
 
-1. Navigate to the frontend directory:
+Please follow these steps in order to start the application.
+
+### 1. Ollama Setup
+1. Download and install [Ollama](https://ollama.com/download).
+2. Start the Ollama server:
    ```bash
-   cd frontend
+   ollama serve
    ```
+*(Note: If the application uses a specific model, make sure to pull it using `ollama pull <model-name>`)*
 
-2. Install dependencies:
+### 2. Backend Setup
+1. Open a new terminal and navigate to the backend directory:
    ```bash
-   npm install
+   cd backend
    ```
-
-## Running the Application
-
-1. Start the backend server (in a separate terminal):
+2. Create and activate a virtual environment:
    ```bash
-   cd ../backend
-   python app.py
+   python -m venv venv
+   
+   # On macOS/Linux:
+   source venv/bin/activate
+   # On Windows:
+   venv\Scripts\activate
    ```
-
-2. Start the frontend development server:
+3. Install the required Python dependencies:
    ```bash
-   npm run dev
+   pip install -r requirements.txt
    ```
+4. Start the FastAPI backend server:
+   ```bash
+   uvicorn main:app --port 5000 --reload
+   ```
+   *The backend will now be running on `http://127.0.0.1:5000`.*
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 3. Frontend Setup
+1. Open another terminal in the root directory of the project.
+2. Install Bun (if not already installed):
+   ```bash
+   # macOS, Linux, and WSL
+   curl -fsSL https://bun.sh/install | bash
+   
+   # Windows
+   powershell -c "irm bun.sh/install.ps1|iex"
+   ```
+3. Install frontend dependencies:
+   ```bash
+   bun install
+   ```
+4. Start the frontend development server:
+   ```bash
+   bun dev
+   ```
+5. **Open the Application**: Navigate to [http://localhost:3000](http://localhost:3000) in your web browser.
 
 ## Project Structure
-- `src/app/page.tsx`: Main landing page
-- `src/components/upload.tsx`: File upload component
-- `src/components/gap-analysis-report.tsx`: Report visualization
-- `src/app/globals.css`: Global styles & animations
+- `src/app/`: Next.js application pages and layout
+- `src/components/`: Reusable UI components
+- `src/features/`: Feature-specific components (e.g., upload, analysis)
+- `backend/`: FastAPI application, LLM helpers, and routes
+- `backend/main.py`: Backend entry point
+- `package.json`: Frontend dependencies and scripts
