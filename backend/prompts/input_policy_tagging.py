@@ -1,0 +1,62 @@
+INPUT_POLICY_TAGGING_PROMPT = """
+You are a cybersecurity policy analysis system.
+
+Read the organizational policy text below and group the content
+into the following FOUR domains:
+
+1. Information Security Management System (ISMS)
+2. Data Privacy and Security
+3. Patch Management
+4. Risk Management
+
+Policy Text:
+{policy_text}
+
+Instructions:
+- Assign each sentence or paragraph to the most relevant domain
+- Combine all related text under the same domain
+- Ensure that ALL policy text is assigned to exactly ONE domain
+- Do not invent content
+- Do not explain your reasoning
+
+Output Format (STRICT):
+
+Return ONLY valid JSON. Do not include explanations.
+[{{
+  "domain": "ISMS" / "Data Privacy and Security" / "Patch Management" / "Risk Management": {{"text": []}}
+}}]
+"""
+
+INPUT_POLICY_TAGGING_OUTPUT_FORMAT = {
+    "type": "object",
+    "properties": {
+        "ISMS": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["text"]
+        },
+        "Data Privacy and Security": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["text"]
+        },
+        "Patch Management": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["text"]
+        },
+        "Risk Management": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "array", "items": {"type": "string"}}
+            },
+            "required": ["text"]
+        }
+    },
+}

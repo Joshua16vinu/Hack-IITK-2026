@@ -108,7 +108,7 @@ function DomainCard({ domain, index, onClick }: { domain: Domain, index: number,
                     </p>
                 </div>
 
-                <div className="mt-auto space-y-4">
+                {/* <div className="mt-auto space-y-4">
                     <div className="flex flex-wrap gap-2">
                         {domain.subdomains.slice(0, 3).map((sub, i) => (
                             <span key={i} className="text-xs font-mono text-slate-500 bg-[#0B0B15]/50 border border-white/5 px-2 py-1 rounded">
@@ -126,7 +126,7 @@ function DomainCard({ domain, index, onClick }: { domain: Domain, index: number,
                         <span>Generate Analysis</span>
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
-                </div>
+                </div> */}
             </div>
         </motion.div>
     )
