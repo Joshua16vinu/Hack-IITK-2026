@@ -26,37 +26,3 @@ Return ONLY valid JSON. Do not include explanations.
   "domain": "ISMS" / "Data Privacy and Security" / "Patch Management" / "Risk Management": {{"text": []}}
 }}]
 """
-
-INPUT_POLICY_TAGGING_OUTPUT_FORMAT = {
-    "type": "object",
-    "properties": {
-        "ISMS": {
-            "type": "object",
-            "properties": {
-                "text": {"type": "array", "items": {"type": "string"}}
-            },
-            "required": ["text"]
-        },
-        "Data Privacy and Security": {
-            "type": "object",
-            "properties": {
-                "text": {"type": "array", "items": {"type": "string"}}
-            },
-            "required": ["text"]
-        },
-        "Patch Management": {
-            "type": "object",
-            "properties": {
-                "text": {"type": "array", "items": {"type": "string"}}
-            },
-            "required": ["text"]
-        },
-        "Risk Management": {
-            "type": "object",
-            "properties": {
-                "text": {"type": "array", "items": {"type": "string"}}
-            },
-            "required": ["text"]
-        }
-    },
-}

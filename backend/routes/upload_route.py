@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.llm_helper import call_llm
-from prompts.input_policy_tagging import INPUT_POLICY_TAGGING_PROMPT, INPUT_POLICY_TAGGING_OUTPUT_FORMAT
+from prompts.input_policy_tagging import INPUT_POLICY_TAGGING_PROMPT
 from constants import UPLOAD_FOLDER
 
 upload_router = APIRouter()
@@ -49,4 +49,4 @@ async def upload_pdf(file: UploadFile = File(...)):
             detail=json.dumps({"message": "LLM processing failed", "error": str(e)})
         )
         
-    return {"message": "File processed successfully", "llm_response": llm_response}
+    return llm_response

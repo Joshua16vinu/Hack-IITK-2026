@@ -37,7 +37,6 @@ export default function EnterpriseDashboard() {
   }, [])
 
   const handleUploadSuccess = (data: any[]) => {
-    // The API returns an array of domains
     setUploadedDomains(data)
     localStorage.setItem('uploadedDomains', JSON.stringify(data))
     setActiveTab('domain-selection')

@@ -1,13 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Database, FileText, ArrowRight, Shield, Lock, Activity } from 'lucide-react'
-import { Badge } from '@/components/ui/Badge'
-import { cn } from '@/lib/utils'
+import { Database, Shield, Lock, Activity, ArrowRight } from 'lucide-react'
 
 interface Domain {
     domain: string
-    text: string
+    text: string | string[]
     subdomains: string[]
 }
 
@@ -95,38 +93,34 @@ function DomainCard({ domain, index, onClick }: { domain: Domain, index: number,
                     <div className="p-3 rounded-xl bg-[#1E1E2C] group-hover:bg-[#F29F67]/20 transition-colors border border-white/5">
                         <Icon className="w-6 h-6 text-[#F29F67] group-hover:scale-110 transition-transform" />
                     </div>
-                    <Badge label={`${domain.subdomains.length} Subdomains`} variant="default" />
+                    {/* <Badge label={`${domain.subdomains?.length || 0} Subdomains`} variant="default" /> */}
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#F29F67] transition-colors">
                     {domain.domain}
                 </h3>
 
-                <div className="bg-[#0B0B15]/30 p-3 rounded-lg border border-white/5 mb-6">
-                    <p className="text-slate-400 text-sm leading-relaxed max-h-[150px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pr-2">
-                        {domain.text}
-                    </p>
-                </div>
-
-                {/* <div className="mt-auto space-y-4">
-                    <div className="flex flex-wrap gap-2">
-                        {domain.subdomains.slice(0, 3).map((sub, i) => (
-                            <span key={i} className="text-xs font-mono text-slate-500 bg-[#0B0B15]/50 border border-white/5 px-2 py-1 rounded">
-                                {sub}
-                            </span>
-                        ))}
-                        {domain.subdomains.length > 3 && (
-                            <span className="text-xs font-mono text-slate-500 px-1 py-1">
-                                +{domain.subdomains.length - 3} more
-                            </span>
+                <div className="bg-[#0B0B15]/30 p-2 rounded-xl border border-white/5 mb-6">
+                    <div className="text-slate-400 text-sm leading-relaxed max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pr-2 space-y-3">
+                        {Array.isArray(domain.text) ? (
+                            domain.text.map((item, i) => (
+                                <div key={i} className="flex items-start gap-3 group/item">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B8FF3]/40 group-hover/item:bg-[#3B8FF3] mt-1.5 shrink-0 transition-colors" />
+                                    <p className="text-slate-300/90 leading-snug">{item}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-slate-300/90 leading-snug">{domain.text}</p>
                         )}
                     </div>
+                </div>
 
+                <div className="mt-auto space-y-4">
                     <div className="flex items-center text-[#F29F67] font-medium text-sm pt-4 border-t border-white/5 group-hover:border-[#F29F67]/20 transition-colors">
                         <span>Generate Analysis</span>
                         <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                     </div>
-                </div> */}
+                </div>
             </div>
         </motion.div>
     )

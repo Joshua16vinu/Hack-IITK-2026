@@ -23,19 +23,12 @@ def ensure_ollama_running():
 
 def call_llm(
     prompt: str,
-    # output_format: Optional[dict] = None,
-    stream: bool = False
 ) -> Any:
     ensure_ollama_running()
-
-    print("\n===== LLM INPUT =====")
-    print(prompt)
-    print("======================\n")
 
     payload = {
         "model":  MODEL_NAME,
         "prompt": prompt,
-        "stream": stream,
         "options": {
             "temperature": 0.0,
             "num_ctx":     4096,
@@ -43,37 +36,12 @@ def call_llm(
         }
     }
 
-    # if output_format is not None:
-    #     payload["format"] = output_format
-
-    if stream:
-        def _stream_chunks() -> Iterator[str]:
-            response = requests.post(
-                "http://localhost:11434/api/generate",
-                json=payload,
-                stream=True
-            )
-            response.raise_for_status()
-            for line in response.iter_lines():
-                if not line:
-                    continue
-                print(line.decode(), flush=True)
-                chunk = json.loads(line)
-                yield chunk.get("response", "")
-                if chunk.get("done"):
-                    break
-        print("\n===== LLM OUTPUT (STREAM) =====")
-        print(_stream_chunks())
-        print("======================\n")
-        return _stream_chunks()
-
     print("payload", payload)
     response = requests.post(
         "http://localhost:11434/api/generate",
         json=payload
     )
     response.raise_for_status()
-
     body = response.json()
     generated_text = body.get("response", "")
     print("\n===== LLM OUTPUT =====")
