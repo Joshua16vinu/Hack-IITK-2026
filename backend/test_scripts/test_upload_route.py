@@ -1,9 +1,4 @@
-import sys
 from pathlib import Path
-
-# Add backend directory to sys.path
-backend_dir = Path(__file__).resolve().parent.parent
-sys.path.append(str(backend_dir))
 
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.llm_helper import call_llm
