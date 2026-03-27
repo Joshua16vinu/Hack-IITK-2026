@@ -10,7 +10,7 @@ __pycache__/
 *.venv/
 .venv311/
 venv/
-backend/db/chroma
+backend/chromadb/
 # ===============================
 # OS / Editor
 # ===============================
@@ -27,7 +27,7 @@ backend/uploads/
 # ===============================
 # Vector Database (ChromaDB)
 # ===============================
-backend/db/chroma/
+backend/chromadb/
 *.chroma.sqlite3
 *.sqlite3
 *.bin
