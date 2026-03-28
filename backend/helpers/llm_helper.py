@@ -30,8 +30,9 @@ def call_llm(
         "model":  MODEL_NAME,
         "prompt": prompt,
         "options": {
-            "temperature": 0.0,
-            "num_ctx":     4096,
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "num_ctx": 4096,
             "num_predict": 900
         }
     }
@@ -59,19 +60,7 @@ def stream_llm(prompt: str) -> Iterator[str]:
     try:
         response = ollama.chat(
             model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a cybersecurity policy analysis assistant. "
-                        "Follow the instructions strictly and return structured output."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            prompt=prompt,
             options={
                 "temperature": 0.0,
                 "num_ctx": 8192,

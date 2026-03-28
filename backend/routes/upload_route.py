@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.llm_helper import call_llm
-from prompts.input_policy_tagging import INPUT_POLICY_TAGGING_PROMPT
+from prompts.input_policy_tagging import INPUT_POLICY_TAGGING_PROMPT,INPUT_POLICY_TAGGING_OUTPUT_EXAMPLE
 from constants import UPLOAD_FOLDER
 
 upload_router = APIRouter()
@@ -42,7 +42,7 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     # Call LLM with the extracted text
     try:
-        llm_response = call_llm(INPUT_POLICY_TAGGING_PROMPT.format(policy_text=text))
+        llm_response = call_llm(INPUT_POLICY_TAGGING_PROMPT.format(policy_text=text, output_example=INPUT_POLICY_TAGGING_OUTPUT_EXAMPLE))
     except Exception as e:
         raise HTTPException(
             status_code=500,
