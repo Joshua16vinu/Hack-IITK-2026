@@ -7,18 +7,25 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Iterable, Iterator, List, Optional
 
 from constants import MODEL_NAME
+from helpers.logger import setup_logging, get_logger
+
+
+setup_logging()
+logger = get_logger(__name__)
 
 
 def ensure_ollama_running():
     try:
         requests.get("http://localhost:11434", timeout=2)
     except requests.RequestException:
+        logger.warning("Ollama not running. Starting ollama service")
         subprocess.Popen(
             ["ollama", "serve"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
         time.sleep(5)
+        logger.info("Ollama startup wait complete")
 
 
 def call_llm(
@@ -37,7 +44,7 @@ def call_llm(
         }
     }
 
-    print("payload", payload)
+    logger.debug("Sending LLM payload with model=%s", MODEL_NAME)
     response = requests.post(
         "http://localhost:11434/api/generate",
         json=payload
@@ -45,17 +52,13 @@ def call_llm(
     response.raise_for_status()
     body = response.json()
     generated_text = body.get("response", "")
-    print("\n===== LLM OUTPUT =====")
-    print(generated_text)
-    print("======================\n")
+    logger.info("LLM response received")
     return json.loads(generated_text)
 
 def stream_llm(prompt: str) -> Iterator[str]:
     ensure_ollama_running()
 
-    print("\n===== LLM INPUT (STREAM) =====")
-    print(prompt)
-    print("==============================\n")
+    logger.info("Starting streamed LLM response")
 
     try:
         response = ollama.chat(
@@ -72,10 +75,9 @@ def stream_llm(prompt: str) -> Iterator[str]:
         for part in response:
             chunk = part.get("message", {}).get("content", "")
             if chunk:
-                print(chunk, end="", flush=True)
                 yield chunk
     except Exception as e:
-        print(f"\n[stream_llm ERROR]: {e}")
+        logger.exception("stream_llm failed: %s", e)
         raise
 
 def call_llm_batch(

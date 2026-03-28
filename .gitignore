@@ -25,19 +25,17 @@ Thumbs.db
 backend/uploads/
 
 # ===============================
+# Local Models
+# ===============================
+backend/models/
+
+# ===============================
 # Vector Database (ChromaDB)
 # ===============================
 backend/chromadb/
 *.chroma.sqlite3
 *.sqlite3
 *.bin
-
-# ===============================
-# Generated / Runtime Data
-# ===============================
-backend/data/outputs/
-backend/data/org_policy/
-backend/data/uploads/
 
 # ===============================
 # Test & Temp files

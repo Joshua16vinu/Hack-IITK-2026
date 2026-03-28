@@ -1,37 +1,42 @@
 import json
 import chromadb
-import os
+from pathlib import Path
 
 from constants import BACKEND_BASE_DIR
-from embeddings.helper import load_embedding_model
+from helpers.embedding_helper import load_embedding_model
+from helpers.logger import setup_logging, get_logger
 
 
-JSON_PATH = BACKEND_BASE_DIR / "embeddings" / "chunks_of_nist.json"
+setup_logging()
+logger = get_logger(__name__)
+
+
+JSON_PATH = Path(BACKEND_BASE_DIR) / "embeddings" / "chunks_of_nist.json"
 
 COLLECTION_NAME = "nist_controls"
 
 
 # -------- Init ChromaDB --------
-print("Initializing ChromaDB HTTP client...")
+logger.info("Initializing ChromaDB HTTP client")
 client = chromadb.HttpClient(host="localhost", port="8000")
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
 # -------- Safety check --------
 if collection.count() > 0:
-    print("Chroma collection already has data. Skipping ingestion.")
+    logger.info("Chroma collection already has data. Skipping ingestion")
     exit()
 
 # -------- Load JSON --------
-print("Loading JSON...")
+logger.info("Loading NIST chunk JSON from %s", JSON_PATH)
 with open(JSON_PATH, "r", encoding="utf-8") as f:
     nist_data = json.load(f)
 
 # -------- Load embedding model --------
-print("Loading embedding model...")
+logger.info("Loading embedding model")
 embedder = load_embedding_model()
 
 # -------- Embed & store --------
-print("🔄 Creating embeddings and storing...")
+logger.info("Creating embeddings and storing in collection: %s", COLLECTION_NAME)
 for item in nist_data:
     embedding = embedder.encode(item["text"]).tolist()
 
@@ -46,4 +51,4 @@ for item in nist_data:
         embeddings=[embedding]
     )
 
-print("NIST embeddings stored successfully.")
+logger.info("NIST embeddings stored successfully")
