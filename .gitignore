@@ -32,6 +32,7 @@ backend/models/
 # ===============================
 # Vector Database (ChromaDB)
 # ===============================
+backend/chroma_data/
 backend/chromadb/
 *.chroma.sqlite3
 *.sqlite3
@@ -54,3 +55,8 @@ backend/chromadb/
 # ===============================
 .next/
 node_modules/
+
+# ===============================
+# Logs
+# ===============================
+backend/logs/
