@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from helpers.llm_helper import call_llm, stream_llm
 from constants import BACKEND_BASE_DIR
 
-GET_TITLES_PROMPT = """Extract the titles of all sections and subsections from the following policy document text: {pdf_content}. Return the titles in plain text as I am streaming."""
+GET_TITLES_PROMPT = """Extract the titles of all sections and subsections from the following policy document text: {pdf_content}. Return the titles as an array of strings, {{"titles": [title1, title2, ...]}}."""
 
 
 def upload_pdf(file_path: str):
@@ -18,7 +18,7 @@ def upload_pdf(file_path: str):
 
 if __name__ == "__main__":
     project_root = Path(BACKEND_BASE_DIR).parent
-    test_pdf = project_root / "policies" / "sample_policy.pdf"
+    test_pdf = project_root / "policies" / "policy1.pdf"
 
     prompt = upload_pdf(test_pdf)
     print("Prompt prepared, sending to LLM...")
