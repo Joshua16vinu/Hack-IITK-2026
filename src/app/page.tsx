@@ -17,14 +17,52 @@ export default function EnterpriseDashboard() {
     const cached = localStorage.getItem('uploadedDomains')
     if (cached) {
       try {
-        setUploadedDomains(JSON.parse(cached))
-      } catch (e) {}
+        const parsed = JSON.parse(cached)
+        // Normalize: old cache may have stored the full API response object
+        const domains = Array.isArray(parsed) ? parsed : (parsed?.result ?? [])
+        setUploadedDomains(domains)
+      } catch (e) {
+        console.error("Failed to parse cached domains", e)
+      }
     }
   }, [])
 
-  const handleUploadSuccess = (data: any[]) => {
-    setUploadedDomains(data)
-    localStorage.setItem('uploadedDomains', JSON.stringify(data))
+  const handleUploadSuccess = (data: any) => {
+    // Backend returns { file_id, cached, result: [...] }
+    const domains = Array.isArray(data) ? data : (data?.result ?? [])
+    setUploadedDomains(domains)
+    localStorage.setItem('uploadedDomains', JSON.stringify(domains))
+    setActiveTab('domain-selection')
+  }
+
+  const handleDomainSelect = async (domainObj: any) => {
+    setIsAnalyzing(true)
+    // Small delay to let the UI update and show the loader smoothly
+    await new Promise(r => setTimeout(r, 500))
+
+    try {
+      const res = await axios.post('http://127.0.0.1:5000/api/analyze-domain', domainObj)
+      setAnalysisResult(res.data)
+      setActiveTab('scan')
+    } catch (error) {
+      console.error("Analysis failed", error)
+      // Ideally show an error toast here
+    } finally {
+      setIsAnalyzing(false)
+    }
+  }
+
+  const handleReturnToDomains = () => {
+    setAnalysisResult(null)
+    setActiveTab('domain-selection')
+  }
+
+  const handleReset = () => {
+    // This is a full reset
+    setAnalysisResult(null)
+    setUploadedDomains([])
+    localStorage.removeItem('uploadedDomains')
+    setActiveTab('dashboard')
   }
 
   return (
