@@ -1,154 +1,455 @@
-"use client";
+'use client'
 
-import { motion } from "framer-motion";
-import { Database, Shield, Lock, Activity, ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/Badge";
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Shield,
+  Database,
+  Activity,
+  Lock,
+  FileKey,
+  ShieldAlert,
+  ChevronRight,
+  Layers,
+  FileText,
+  BookOpen,
+  BarChart2,
+  Sparkles,
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Domain {
-  domain: string;
-  text: string | string[];
-  related_nist_policies: string[];
+  domain: string
+  text: string | string[]
+  related_nist_policies: string[]
 }
 
 interface DomainSelectionProps {
-  domains: Domain[];
-  onSelect: (domain: Domain) => void;
-  onBack?: () => void;
+  domains: Domain[]
+  onSelect: (domain: Domain) => void  // kept for compatibility
+  onSelectAll?: (domains: Domain[]) => void
+  onBack?: () => void
 }
 
-export function DomainSelectionView({
-  domains,
-  onSelect,
-  onBack,
-}: DomainSelectionProps) {
+// ─── Domain meta ─────────────────────────────────────────────────────────────
+
+const DOMAIN_META: Record<string, { color: string; bg: string; border: string; icon: any; badge: string }> = {
+  'ISMS': {
+    color: 'text-[#3B8FF3]', bg: 'bg-[#3B8FF3]/10', border: 'border-[#3B8FF3]/25',
+    icon: Shield, badge: 'ISMS'
+  },
+  'Risk Management': {
+    color: 'text-[#F29F67]', bg: 'bg-[#F29F67]/10', border: 'border-[#F29F67]/25',
+    icon: Activity, badge: 'RISK'
+  },
+  'Patch Management': {
+    color: 'text-[#E0B50F]', bg: 'bg-[#E0B50F]/10', border: 'border-[#E0B50F]/25',
+    icon: ShieldAlert, badge: 'PATCH'
+  },
+  'Data Privacy & Security': {
+    color: 'text-[#34B1AA]', bg: 'bg-[#34B1AA]/10', border: 'border-[#34B1AA]/25',
+    icon: FileKey, badge: 'PRIVACY'
+  },
+}
+
+const getFallbackMeta = (name: string) => {
+  const n = name.toLowerCase()
+  if (n.includes('risk')) return { ...DOMAIN_META['Risk Management'], badge: name.slice(0, 4).toUpperCase() }
+  if (n.includes('patch')) return { ...DOMAIN_META['Patch Management'], badge: name.slice(0, 4).toUpperCase() }
+  if (n.includes('data') || n.includes('privacy')) return { ...DOMAIN_META['Data Privacy & Security'], badge: name.slice(0, 4).toUpperCase() }
+  return { color: 'text-[#3B8FF3]', bg: 'bg-[#3B8FF3]/10', border: 'border-[#3B8FF3]/25', icon: Database, badge: name.slice(0, 4).toUpperCase() }
+}
+
+const getMeta = (name: string) => DOMAIN_META[name] ?? getFallbackMeta(name)
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const chunkCount = (text: string | string[]) => Array.isArray(text) ? text.length : 1
+const totalChunks = (domains: Domain[]) => domains.reduce((a, d) => a + chunkCount(d.text), 0)
+const totalNist = (domains: Domain[]) => domains.reduce((a, d) => a + (d.related_nist_policies?.length ?? 0), 0)
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
+export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: DomainSelectionProps) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'nist'>('overview')
+
+  const handleGenerate = () => {
+    if (onSelectAll) {
+      onSelectAll(domains)
+    } else if (domains.length > 0) {
+      // Fallback: trigger first domain for compatibility
+      onSelect(domains[0])
+    }
+  }
+
   return (
-    <div className="space-y-8 animate-enter max-w-5xl mx-auto">
-      <div className="text-center space-y-4 mb-12">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center justify-center p-3 rounded-2xl bg-[#3B8FF3]/10 text-[#3B8FF3] mb-4"
-        >
-          <Shield className="w-8 h-8" />
-        </motion.div>
-        <motion.h2
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-3xl font-bold text-white tracking-tight"
-        >
-          Select Analysis Domain
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-slate-400 max-w-2xl mx-auto text-lg"
-        >
-          We identified {domains.length} security domains in your document.
-          {/* Select a domain to generate a detailed gap analysis and implementation roadmap. */}
-        </motion.p>
-      </div>
+    <div className="max-w-5xl mx-auto pb-36 space-y-8">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {domains.map((domain, index) => (
-          <DomainCard
-            key={index}
-            domain={domain}
-            index={index}
-            onClick={() => onSelect(domain)}
-          />
+      {/* ── Page Header ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center space-y-3 pt-4"
+      >
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#3B8FF3]/10 border border-[#3B8FF3]/20 text-[#3B8FF3] text-xs font-semibold uppercase tracking-wider mb-2">
+          <Sparkles className="w-3.5 h-3.5" />
+          Analysis Summary
+        </div>
+        <h1 className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+          We identified{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F29F67] to-[#3B8FF3]">
+            {domains.length} security domain{domains.length !== 1 ? 's' : ''}
+          </span>{' '}
+          in your document
+        </h1>
+        <p className="text-slate-400 text-base max-w-2xl mx-auto">
+          Review the detected domains and their associated NIST controls. When ready, generate a complete gap analysis report.
+        </p>
+      </motion.div>
+
+      {/* ── Summary Stats Bar ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-3 gap-4"
+      >
+        <StatPill icon={Layers} label="Domains Detected" value={domains.length} color="text-[#3B8FF3]" bg="bg-[#3B8FF3]/10" />
+        <StatPill icon={FileText} label="Total Input Chunks" value={totalChunks(domains)} color="text-[#F29F67]" bg="bg-[#F29F67]/10" />
+        <StatPill icon={BookOpen} label="NIST Controls Retrieved" value={totalNist(domains)} color="text-[#34B1AA]" bg="bg-[#34B1AA]/10" />
+      </motion.div>
+
+      {/* ── Tabs ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="flex items-center gap-1 bg-[#0f0f1c] border border-white/6 rounded-xl p-1 w-fit"
+      >
+        {[
+          { key: 'overview', label: 'Overview', icon: BarChart2 },
+          { key: 'nist', label: 'NIST Policies', icon: BookOpen },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key as any)}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+              activeTab === key
+                ? 'bg-[#1e1e35] text-white shadow-sm border border-white/8'
+                : 'text-slate-500 hover:text-slate-300'
+            )}
+          >
+            <Icon className="w-3.5 h-3.5" />
+            {label}
+          </button>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="text-center mt-12">
-        <button
-          onClick={onBack}
-          className="text-slate-500 hover:text-white transition-colors text-sm"
-        >
-          ← Upload different document
-        </button>
+      {/* ── Tab Content ── */}
+      <AnimatePresence mode="wait">
+
+        {/* OVERVIEW */}
+        {activeTab === 'overview' && (
+          <motion.div
+            key="overview"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-5"
+          >
+            {domains.map((domain, i) => (
+              <DomainCard key={i} domain={domain} index={i} />
+            ))}
+          </motion.div>
+        )}
+
+        {/* NIST POLICIES */}
+        {activeTab === 'nist' && (
+          <motion.div
+            key="nist"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="space-y-4"
+          >
+            {domains.map((domain, i) => (
+              <NistRow key={i} domain={domain} index={i} />
+            ))}
+          </motion.div>
+        )}
+
+      </AnimatePresence>
+
+      {/* ── Fixed Bottom CTA ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="pointer-events-auto max-w-5xl mx-auto px-6 pb-6">
+          <div className="bg-[#0d0d1e]/90 backdrop-blur-xl border border-white/8 rounded-2xl px-6 py-4 flex items-center justify-between gap-6 shadow-2xl shadow-black/60">
+            <div className="min-w-0">
+              <p className="text-white font-semibold text-sm">Ready to generate gap analysis?</p>
+              <p className="text-slate-500 text-xs mt-0.5 truncate">
+                {domains.length} domain{domains.length !== 1 ? 's' : ''} · {totalChunks(domains)} chunks · {totalNist(domains)} NIST controls
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-400 hover:text-white border border-white/8 hover:border-white/15 rounded-xl transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                New Upload
+              </button>
+              <button
+                onClick={handleGenerate}
+                className="flex items-center gap-2.5 px-6 py-2.5 bg-gradient-to-r from-[#F29F67] to-[#e8874a] hover:from-[#f5aa77] hover:to-[#F29F67] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#F29F67]/20 transition-all hover:scale-105 hover:shadow-[#F29F67]/30"
+                title="Analyze all detected domains together"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate Gap Analysis for All Domains
+                <ChevronRight className="w-4 h-4 opacity-70" />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  );
+  )
 }
 
-// Determine icon based on domain name (simple heuristic)
-const getIconType = (name: string): "activity" | "lock" | "database" => {
-  const n = name.toLowerCase();
-  if (n.includes("risk")) return "activity";
-  if (n.includes("security") || n.includes("isms")) return "lock";
-  return "database";
-};
+// ─── Domain Card (Overview Tab) ──────────────────────────────────────────────
 
-function DomainCard({
-  domain,
-  index,
-  onClick,
-}: {
-  domain: Domain;
-  index: number;
-  onClick: () => void;
-}) {
-  const iconType = getIconType(domain.domain);
+function DomainCard({ domain, index }: { domain: Domain; index: number }) {
+  const meta = getMeta(domain.domain)
+  const Icon = meta.icon
+  const chunks = chunkCount(domain.text)
+  const nistCount = domain.related_nist_policies?.length ?? 0
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 + 0.3 }}
-      onClick={onClick}
-      className="group relative overflow-hidden rounded-2xl border border-white/5 bg-[#151520]/60 backdrop-blur-md p-6 hover:border-[#F29F67]/50 transition-all cursor-pointer hover:shadow-2xl hover:shadow-[#F29F67]/10 hover:-translate-y-1"
+      transition={{ delay: index * 0.08 }}
+      className={cn(
+        'group relative overflow-hidden rounded-2xl border bg-[#0f0f1c] p-6 transition-all duration-300',
+        'hover:-translate-y-1 hover:shadow-2xl',
+        meta.border
+      )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#F29F67]/0 via-transparent to-[#3B8FF3]/0 opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
+      {/* Subtle glow overlay */}
+      <div className={cn('absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none', meta.bg)} style={{ opacity: 0 }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
+      />
+      <div className={cn('absolute top-0 left-0 right-0 h-px', `bg-gradient-to-r from-transparent ${meta.color.replace('text-', 'via-')} to-transparent opacity-50`)} />
 
-      <div className="relative z-10 flex flex-col h-full">
-        <div className="flex justify-between items-start mb-4">
-          <div className="p-3 rounded-xl bg-[#1E1E2C] group-hover:bg-[#F29F67]/20 transition-colors border border-white/5">
-            {iconType === "activity" && (
-              <Activity className="w-6 h-6 text-[#F29F67] group-hover:scale-110 transition-transform" />
-            )}
-            {iconType === "lock" && (
-              <Lock className="w-6 h-6 text-[#F29F67] group-hover:scale-110 transition-transform" />
-            )}
-            {iconType === "database" && (
-              <Database className="w-6 h-6 text-[#F29F67] group-hover:scale-110 transition-transform" />
-            )}
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className={cn('p-3 rounded-xl border', meta.bg, meta.border)}>
+            <Icon className={cn('w-5 h-5', meta.color)} />
+          </div>
+          <span className={cn('text-[10px] font-bold font-mono tracking-widest px-2.5 py-1 rounded-full border', meta.color, meta.bg, meta.border)}>
+            {meta.badge}
+          </span>
+        </div>
+
+        {/* Domain name */}
+        <h3 className={cn('text-lg font-bold text-white mb-1 group-hover:transition-colors', `group-hover:${meta.color}`)}>
+          {domain.domain}
+        </h3>
+
+        {/* Stats row */}
+        <div className="flex items-center gap-4 mt-3 mb-5">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <FileText className="w-3.5 h-3.5 text-slate-500" />
+            <span><span className="text-white font-semibold">{chunks}</span> input chunk{chunks !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="w-px h-3 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <BookOpen className="w-3.5 h-3.5 text-slate-500" />
+            <span><span className="text-white font-semibold">{nistCount}</span> NIST control{nistCount !== 1 ? 's' : ''}</span>
           </div>
         </div>
 
-        <div className="mb-2 flex items-center gap-2">
-          <h3 className="text-xl font-bold text-white group-hover:text-[#F29F67] transition-colors">
-            {domain.domain}
-          </h3>
-          <Badge
-            label={`${domain.related_nist_policies?.length || 0} Related NIST Policies`}
-            variant="default"
-          />
+        {/* Chunk preview — first chunk only, trimmed */}
+        <div className="bg-[#080812] border border-white/5 rounded-xl p-3 text-xs text-slate-400 leading-relaxed line-clamp-3 font-mono">
+          {Array.isArray(domain.text)
+            ? `"${(domain.text[0] ?? '').slice(0, 200).trim()}…"`
+            : `"${String(domain.text).slice(0, 200).trim()}…"`}
         </div>
 
-        <div className="bg-[#0B0B15]/30 p-2 rounded-xl border border-white/5 mb-6">
-          <div className="text-slate-400 text-sm leading-relaxed max-h-[180px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pr-2 space-y-3">
-            {Array.isArray(domain.text) ? (
-              domain.text.map((item, i) => (
-                <div key={i} className="flex items-start gap-3 group/item">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#3B8FF3]/40 group-hover/item:bg-[#3B8FF3] mt-1.5 shrink-0 transition-colors" />
-                  <p className="text-slate-300/90 leading-snug">{item}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-slate-300/90 leading-snug">{domain.text}</p>
-            )}
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#34B1AA]" />
+            <span className="text-xs text-slate-500">Ready for analysis</span>
           </div>
-        </div>
-
-        <div className="mt-auto space-y-4">
-          <div className="flex items-center text-[#F29F67] font-medium text-sm pt-4 border-t border-white/5 group-hover:border-[#F29F67]/20 transition-colors">
-            <span>Generate Analysis</span>
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+          <div className={cn('flex items-center gap-1 text-xs font-semibold', meta.color)}>
+            <span>Included</span>
+            <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>
       </div>
     </motion.div>
-  );
+  )
+}
+
+// ─── Breakdown Row (Domain Breakdown Tab) ────────────────────────────────────
+
+function BreakdownRow({ domain, index }: { domain: Domain; index: number }) {
+  const meta = getMeta(domain.domain)
+  const Icon = meta.icon
+  const chunks = Array.isArray(domain.text) ? domain.text : [domain.text]
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.07 }}
+      className={cn('rounded-xl border bg-[#0f0f1c] overflow-hidden transition-all', meta.border)}
+    >
+      {/* Header */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className={cn('p-2 rounded-lg', meta.bg)}>
+            <Icon className={cn('w-4 h-4', meta.color)} />
+          </div>
+          <div className="text-left">
+            <p className="text-white font-semibold text-sm">{domain.domain}</p>
+            <p className="text-slate-500 text-xs mt-0.5">{chunks.length} chunk{chunks.length !== 1 ? 's' : ''} extracted</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-xs text-slate-500 mr-2">
+            <span className={cn('font-bold text-sm', meta.color)}>{chunks.length}</span> chunks
+          </div>
+          {expanded
+            ? <ChevronUp className="w-4 h-4 text-slate-500" />
+            : <ChevronDown className="w-4 h-4 text-slate-500" />}
+        </div>
+      </button>
+
+      {/* Expanded chunks */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-4 space-y-2 max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+              {chunks.map((chunk, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[#080812] border border-white/5">
+                  <span className={cn('text-[10px] font-bold font-mono mt-0.5 shrink-0 px-1.5 py-0.5 rounded', meta.bg, meta.color)}>
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-4">{chunk}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ─── NIST Row (NIST Policies Tab) ────────────────────────────────────────────
+
+function NistRow({ domain, index }: { domain: Domain; index: number }) {
+  const meta = getMeta(domain.domain)
+  const Icon = meta.icon
+  const policies = domain.related_nist_policies ?? []
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.07 }}
+      className={cn('rounded-xl border bg-[#0f0f1c] overflow-hidden', meta.border)}
+    >
+      {/* Header */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <div className={cn('p-2 rounded-lg', meta.bg)}>
+            <Icon className={cn('w-4 h-4', meta.color)} />
+          </div>
+          <div className="text-left">
+            <p className="text-white font-semibold text-sm">{domain.domain}</p>
+            <p className="text-slate-500 text-xs mt-0.5">
+              {policies.length} NIST control{policies.length !== 1 ? 's' : ''} matched
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={cn('text-lg font-extrabold tabular-nums', meta.color)}>{policies.length}</span>
+          {expanded
+            ? <ChevronUp className="w-4 h-4 text-slate-500" />
+            : <ChevronDown className="w-4 h-4 text-slate-500" />}
+        </div>
+      </button>
+
+      {/* Expanded: just list policy previews (first 60 chars each) */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 space-y-2 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+              {policies.map((policy, i) => {
+                const firstLine = policy.split('\n')[0].trim()
+                const preview = firstLine.length > 90 ? firstLine.slice(0, 90) + '…' : firstLine
+                return (
+                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[#080812] border border-white/5">
+                    <span className={cn('text-[10px] font-bold font-mono mt-0.5 shrink-0 px-1.5 py-0.5 rounded', meta.bg, meta.color)}>
+                      P{String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="text-xs text-slate-300 leading-relaxed">{preview}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+// ─── Stat Pill ───────────────────────────────────────────────────────────────
+
+function StatPill({ icon: Icon, label, value, color, bg }: {
+  icon: any; label: string; value: number; color: string; bg: string
+}) {
+  return (
+    <div className="flex items-center gap-4 bg-[#0f0f1c] border border-white/6 rounded-xl px-5 py-4">
+      <div className={cn('p-2.5 rounded-xl', bg)}>
+        <Icon className={cn('w-5 h-5', color)} />
+      </div>
+      <div>
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</p>
+        <p className={cn('text-2xl font-extrabold tabular-nums mt-0.5', color)}>{value}</p>
+      </div>
+    </div>
+  )
 }
