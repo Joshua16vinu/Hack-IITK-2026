@@ -71,9 +71,18 @@ async def upload_pdf(file: UploadFile = File(...), domain: Optional[str] = Form(
                 detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
             )
     else:
+        try:
+          input_chunks = sentence_based_chunking(text)
+          print(f"Total chunks created: {len(input_chunks)}")
+        except Exception as e:
+          raise HTTPException(
+            status_code=500,
+            detail=json.dumps({"message": "Chunking failed", "error": str(e)})
+         )
+
         domain_wise_chunks = [{
-            "domain": domain,
-            "text": text
+         "domain": domain,
+         "text": input_chunks   # ✅ list of chunks
         }]
         
     try:
