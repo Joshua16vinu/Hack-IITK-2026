@@ -1,5 +1,5 @@
 from helpers.chroma_helper import get_chroma_client, stats_chroma_collection, delete_chroma_collection
-from constants import NIST_COLLECTION_NAME, KB_COLLECTION_NAME, KEYWORDS_COLLECTION_NAME
+from constants import NIST_COLLECTION_NAME, KB_COLLECTION_NAME
 
 def clear_chroma_collection(collection_name):
     client = get_chroma_client()
@@ -13,5 +13,4 @@ def clear_chroma_collection(collection_name):
     
 if __name__ == "__main__":
     clear_chroma_collection(NIST_COLLECTION_NAME)
-    # clear_chroma_collection(KB_COLLECTION_NAME)
-    # clear_chroma_collection(KEYWORDS_COLLECTION_NAME)
+    clear_chroma_collection(KB_COLLECTION_NAME)

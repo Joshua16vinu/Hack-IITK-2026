@@ -19,4 +19,8 @@ CHUNK_OVERLAP = 50
 
 NIST_COLLECTION_NAME = "nist_controls"
 KB_COLLECTION_NAME = "domain_kb"
-KEYWORDS_COLLECTION_NAME = "domain_keywords"
+
+SEMANTIC_WEIGHT = 0.85
+KEYWORD_WEIGHT = 0.15
+DOMAIN_GAP_THRESHOLD = 0.1
+DOMAIN_DATA_PATH = os.path.join(BACKEND_BASE_DIR, "ingestion", "domain_data.json")
