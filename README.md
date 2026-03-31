@@ -43,7 +43,23 @@ Please follow these steps in order to start the application.
    ```bash
    pip install -r requirements.txt
    ```
-4. Start the FastAPI backend server:
+4. Start ChromaDB (in a separate terminal with venv activated):
+   ```bash
+   source venv/bin/activate  # Make sure venv is activated
+   chroma run --host 0.0.0.0 --port 8000 --path ./chroma_data
+   ```
+   *ChromaDB will now be running on `http://127.0.0.1:8000`.*
+
+5. (Optional) Run ChromaDB ingestion to populate the database:
+   ```bash
+   # Ingest NIST data
+   python -m ingestion.ingest_nist
+   
+   # Ingest domain-specific data
+   python -m ingestion.ingest_domain_data
+   ```
+
+6. Start the FastAPI backend server (in the original backend terminal):
    ```bash
    uvicorn main:app --port 5000 --reload
    ```
