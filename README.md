@@ -50,7 +50,7 @@ Please follow these steps in order to start the application.
    ```
    *ChromaDB will now be running on `http://127.0.0.1:8000`.*
 
-5. (Optional) Run ChromaDB ingestion to populate the database:
+5.  Run ChromaDB ingestion to populate the database:
    ```bash
    # Ingest NIST data
    python -m ingestion.ingest_nist
