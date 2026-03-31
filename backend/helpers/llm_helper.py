@@ -63,7 +63,12 @@ def stream_llm(prompt: str) -> Iterator[str]:
     try:
         response = ollama.chat(
             model=MODEL_NAME,
-            prompt=prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
             options={
                 "temperature": 0.0,
                 "num_ctx": 8192,
