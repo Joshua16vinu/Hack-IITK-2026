@@ -74,6 +74,7 @@ def get_domain_chunks_with_policies(domain_chunks: list[dict]) -> list[dict]:
             query_embeddings=chunk_embeddings,
             n_results=5,
             include=["documents"],
+            where={"domain": item["domain"]}
         )
 
         seen_ids = set()

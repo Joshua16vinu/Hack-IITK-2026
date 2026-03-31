@@ -40,23 +40,23 @@
         ]
     },
     {
-        "domain": "Access Control",
+        "domain": "Patch Management",
         "kb": [
-            "access control user access management role based access control RBAC",
-            "least privilege need to know access rights provisioning deprovisioning",
-            "authentication MFA multi factor authentication password policy SSO",
-            "authorization permissions access review recertification entitlements",
-            "privileged access management PAM admin accounts elevated rights",
-            "identity access management IAM user lifecycle joiner mover leaver",
-            "session management timeout logout inactivity lock screen",
-            "remote access VPN zero trust network access ZTNA",
-            "single sign on federated identity SAML OAuth directory services AD LDAP",
-            "access control list ACL firewall rules network segmentation VLAN"
+           "patch management software updates vulnerability remediation CVE fixes",
+        "patch lifecycle identification testing deployment rollback verification",
+        "vulnerability scanning assessment penetration testing CVSS scoring",
+        "patch Tuesday emergency patching out of band critical zero day",
+        "operating system application firmware patch compliance SLA",
+        "asset inventory software bill of materials SBOM dependency tracking",
+        "end of life EOL unsupported software legacy systems risk acceptance",
+        "vulnerability disclosure responsible disclosure bug bounty program",
+        "configuration baseline hardening CIS benchmarks STIG compliance",
+        "automated patch deployment SCCM Ansible patch orchestration tooling"
         ],
         "keywords": [
-            "access", "authentication", "authorization", "permission",
-            "rbac", "privilege", "identity", "role", "entitlement",
-            "password", "mfa", "session", "login", "credential"
+           "patch", "update", "vulnerability", "cve", "fix",
+        "upgrade", "remediation", "scanning", "hardening", "version",
+        "software update", "firmware", "hotfix", "release", "eol"
         ]
     },
     {
