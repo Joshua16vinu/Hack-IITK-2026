@@ -1,14 +1,14 @@
 import json
 from pathlib import Path
 
-from constants import BACKEND_BASE_DIR, KB_COLLECTION_NAME
+from constants import BACKEND_BASE_DIR, KB_COLLECTION
 from helpers.embedding_helper import load_embedding_model
 from helpers.chroma_helper import get_chroma_client
 
 JSON_PATH = Path(BACKEND_BASE_DIR) / "ingestion" / "domain_data.json"
 
 client = get_chroma_client()
-collection = client.get_or_create_collection(name=KB_COLLECTION_NAME)
+collection = client.get_or_create_collection(name=KB_COLLECTION)
 
 if collection.count() > 0:
     print("Collection already has data. Skipping ingestion.")

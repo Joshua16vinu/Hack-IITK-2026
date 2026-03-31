@@ -1,9 +1,7 @@
-import os
 import json
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
 
-from helpers.pdf_helper import extract_text_from_pdf
 from helpers.llm_helper import stream_llm
 from prompts.policy_revision import REVISED_POLICY_PROMPT
 from constants import UPLOAD_FOLDER

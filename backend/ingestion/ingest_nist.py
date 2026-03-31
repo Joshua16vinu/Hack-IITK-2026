@@ -2,7 +2,7 @@ import json
 import chromadb
 from pathlib import Path
 
-from constants import BACKEND_BASE_DIR, NIST_COLLECTION_NAME
+from constants import BACKEND_BASE_DIR, NIST_COLLECTION
 from helpers.embedding_helper import load_embedding_model
 from helpers.chroma_helper import get_chroma_client
 
@@ -11,7 +11,7 @@ JSON_PATH = Path(BACKEND_BASE_DIR) / "ingestion" / "chunks_of_nist.json"
 
 # -------- Init ChromaDB --------
 client = get_chroma_client()
-collection = client.get_or_create_collection(name=NIST_COLLECTION_NAME)
+collection = client.get_or_create_collection(name=NIST_COLLECTION)
 
 # -------- Safety check --------
 if collection.count() > 0:
@@ -28,7 +28,7 @@ print("Loading embedding model")
 embedder = load_embedding_model()
 
 # -------- Embed & store --------
-print("Creating embeddings and storing in collection:", NIST_COLLECTION_NAME)
+print("Creating embeddings and storing in collection:", NIST_COLLECTION)
 for item in nist_data:
     embedding = embedder.encode(item["text"]).tolist()
 
