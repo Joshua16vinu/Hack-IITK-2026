@@ -1,6 +1,8 @@
 import os
 import json
-from fastapi import APIRouter, UploadFile, File, HTTPException
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from typing import Optional
 
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.chunking_helper import sentence_based_chunking
@@ -10,7 +12,7 @@ from services.upload_service import classify_pdf_chunk, restructure_chunks_by_do
 upload_router = APIRouter()
 
 @upload_router.post("/upload-pdf")
-async def upload_pdf(file: UploadFile = File(...)):
+async def upload_pdf(file: UploadFile = File(...), domain: Optional[str] = Form(None)):
     """Upload and process a PDF file"""
 
     # Validate file
@@ -40,33 +42,39 @@ async def upload_pdf(file: UploadFile = File(...)):
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
         )
 
-    # Chunk text for further processing
-    try:
-        input_chunks = sentence_based_chunking(text)
-        print(f"Total chunks created: {len(input_chunks)}")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=json.dumps({"message": "Chunking failed", "error": str(e)})
-        )
-        
-    classes = []
-    try: 
-        for chunk in input_chunks:
-            classes.append(classify_pdf_chunk(chunk))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=json.dumps({"message": "Classification failed", "error": str(e)})
-        )
-        
-    try:
-        domain_wise_chunks = restructure_chunks_by_domain(classes)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
-        )
+    if not domain:
+        # Chunk text for further processing
+        try:
+            input_chunks = sentence_based_chunking(text)
+            print(f"Total chunks created: {len(input_chunks)}")
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=json.dumps({"message": "Chunking failed", "error": str(e)})
+            )
+            
+        classes = []
+        try: 
+            for chunk in input_chunks:
+                classes.append(classify_pdf_chunk(chunk))
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=json.dumps({"message": "Classification failed", "error": str(e)})
+            )
+            
+        try:
+            domain_wise_chunks = restructure_chunks_by_domain(classes)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
+            )
+    else:
+        domain_wise_chunks = [{
+            "domain": domain,
+            "text": text
+        }]
         
     try:
         domain_chunks_policies = get_domain_chunks_with_policies(domain_wise_chunks)
