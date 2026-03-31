@@ -3,9 +3,9 @@ import json
 from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from helpers.pdf_helper import extract_text_from_pdf
-from helpers.llm_helper import call_llm
-from prompts.input_policy_tagging import INPUT_POLICY_TAGGING_PROMPT,INPUT_POLICY_TAGGING_OUTPUT_EXAMPLE
+from helpers.chunking_helper import sentence_based_chunking
 from constants import UPLOAD_FOLDER
+from services.upload_service import classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
 
 upload_router = APIRouter()
 
@@ -40,13 +40,40 @@ async def upload_pdf(file: UploadFile = File(...)):
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
         )
 
-    # Call LLM with the extracted text
+    # Chunk text for further processing
     try:
-        llm_response = call_llm(INPUT_POLICY_TAGGING_PROMPT.format(policy_text=text, output_example=INPUT_POLICY_TAGGING_OUTPUT_EXAMPLE))
+        input_chunks = sentence_based_chunking(text)
+        print(f"Total chunks created: {len(input_chunks)}")
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=json.dumps({"message": "LLM processing failed", "error": str(e)})
+            detail=json.dumps({"message": "Chunking failed", "error": str(e)})
         )
         
-    return llm_response
+    classes = []
+    try: 
+        for chunk in input_chunks:
+            classes.append(classify_pdf_chunk(chunk))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=json.dumps({"message": "Classification failed", "error": str(e)})
+        )
+        
+    try:
+        domain_wise_chunks = restructure_chunks_by_domain(classes)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
+        )
+        
+    try:
+        domain_chunks_policies = get_domain_chunks_with_policies(domain_wise_chunks)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=json.dumps({"message": "Policy retrieval failed", "error": str(e)})
+        )
+        
+    return domain_chunks_policies
