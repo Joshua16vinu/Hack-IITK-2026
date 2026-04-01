@@ -1,0 +1,35 @@
+{
+    "status": "completed",
+    "results": [
+        {
+            "domain": "Data Privacy & Security",
+            "status": "completed",
+            "gaps": [
+                "The policy does not explicitly address the identification of user actions that can be performed without identification or authentication.",
+                "The policy lacks specific guidance on remote access usage restrictions, configuration requirements, and implementation guidance for each type of remote access.",
+                "The policy does not mention the implementation of cryptographic mechanisms to protect the confidentiality and integrity of remote access sessions.",
+                "The policy does not specify the routing of all remote accesses through managed network access control points to reduce the risk for external attacks.",
+                "The policy does not outline the authorization of the execution of privileged commands and access to security-relevant information via remote access only for defined needs."
+            ]
+        },
+        {
+            "domain": "ISMS",
+            "status": "completed",
+            "gaps": " Based on the provided policy, here are some potential gaps that could be addressed:\n\n1. Lack of specific guidelines for incident response: While the policy mentions incident response coordination and expertise, it does not provide detailed steps for handling incidents, such as escalation procedures, communication protocols, or recovery strategies.\n\n2. No clear definition of critical systems: The policy mentions critical systems but does not provide a clear definition or criteria for determining what constitutes a critical system. This could lead to inconsistencies in the application of recovery time objectives (RTO) and recovery point objectives (RPO).\n\n3. No mention of data backup and disaster recovery testing frequency: While the policy mentions that backups and restoration should be tested regularly, it does not specify how often this should occur.\n\n4. No clear guidelines for vulnerability management: While the policy mentions vulnerability scanning and penetration testing, it does not provide specifics on how often these should be performed, who should perform them, or what actions should be taken upon discovering vulnerabilities.\n\n5. Lack of detail on physical security controls training: While the policy mentions providing training in the employment and operation of physical security controls, it does not provide specifics on what this training should cover or how it should be delivered.\n\n6. No mention of employee exit procedures: The policy does not provide clear guidelines for handling employee separations, such as ensuring all issued property is returned, accounts are disabled, and access is removed immediately upon separation.\n\n7. No clear guidelines for third-party vendor security: The policy mentions that vulnerability scanning/penetration testing must be coordinated when outsourcing a system to another entity or a third party, but it does not provide specifics on what this coordination should entail or what security requirements should be imposed on third-party vendors.\n\n8. Lack of detail on security awareness training: While the policy mentions providing security awareness training, it does not provide specifics on what this training should cover, how often it should be provided, or how it should be delivered.\n\n9. No mention of security awareness training for contractors or temporary workers: The policy focuses on employee security training, but it does not address the need for security awareness training for contractors or temporary workers who may have access to sensitive information.\n\n10. No clear guidelines for security awareness training evaluation: The policy mentions documenting and monitoring individual information system security training activities, but it does not provide specifics on how the effectiveness of the training should be evaluated or how feedback should be incorporated into future training sessions."
+        },
+        {
+            "domain": "Patch Management",
+            "status": "completed",
+            "gaps": [
+                "The policy does not specify a process for altering secure configuration profiles beyond business need, policy or standard compliance, developed in consultation with the Information Security Officer/designated security representative, documented and retained for audit purposes.",
+                "The policy lacks a requirement for configuration management plans to be developed during the acquisition phase of the secure system development life cycle.",
+                "The policy does not mention a configuration monitoring process to identify undiscovered or undocumented system components, misconfigurations, vulnerabilities, and unauthorized changes.",
+                "The policy does not provide a clear separation of duties for the individual(s) verifying patch distribution and the individual(s) distributing the patches.",
+                "The policy does not outline a process for addressing false positives during malicious code detection and eradication and the resulting potential impact on the availability of the information system."
+            ]
+        }
+    ],
+    "completed": 3,
+    "total": 3,
+    "current_domain": "Patch Management"
+}

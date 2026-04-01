@@ -33,7 +33,7 @@ export default function ResultsPage() {
       if (startRes.data.status === 'completed') {
         localStorage.setItem('analysisResult', JSON.stringify(startRes.data.results || []))
         setGenerating(false)
-        router.push('/analysis')
+        // router.push('/analysis')
         return
       }
 
@@ -45,7 +45,7 @@ export default function ResultsPage() {
             clearInterval(pollInterval)
             localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
             setGenerating(false)
-            router.push('/analysis')
+            // router.push('/analysis')
           } else if (statusRes.data.status === 'failed') {
             clearInterval(pollInterval)
             console.error('Job failed:', statusRes.data)

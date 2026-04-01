@@ -50,10 +50,23 @@ def call_llm(
         json=payload
     )
     response.raise_for_status()
-    body = response.json()
+    try:
+        body = response.json()
+    except ValueError:
+        lines = [line for line in response.text.splitlines() if line.strip()]
+        if not lines:
+            raise
+
+        parsed_lines = [json.loads(line) for line in lines]
+        generated_text = "".join(item.get("response", "") for item in parsed_lines)
+        body = {"response": generated_text}
+    print("LLM raw response body:", body)
     generated_text = body.get("response", "")
     logger.info("LLM response received")
-    return json.loads(generated_text)
+    try:
+        return json.loads(generated_text)
+    except (TypeError, json.JSONDecodeError):
+        return generated_text
 
 def stream_llm(prompt: str) -> Iterator[str]:
     ensure_ollama_running()

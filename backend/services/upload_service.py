@@ -72,7 +72,7 @@ def get_domain_chunks_with_policies(domain_chunks: list[dict]) -> list[dict]:
 
         results = _nist_collection.query(
             query_embeddings=chunk_embeddings,
-            n_results=5,
+            n_results=3,
             include=["documents"],
             where={"domain": item["domain"]}
         )
