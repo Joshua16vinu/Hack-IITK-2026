@@ -199,28 +199,8 @@ export default function ResultsPage() {
     }
   }, [router, domains]);
 
-  const handleGeneratePolicy = async () => {
-    if (!domains[0]) return;
-    setGeneratingPolicy(true);
-    const extractedText = localStorage.getItem("extractedText");
-    const gapsData = gapResults.reduce(
-      (acc, g) => {
-        acc[g.domain] = g.gaps || [];
-        return acc;
-      },
-      {} as Record<string, string[]>,
-    );
-    try {
-      await axios.post(
-        "http://127.0.0.1:5000/api/revised-policy",
-        { extractedText, gapsData },
-      );
-      setGeneratingPolicy(false);
-      // Navigate or show success if needed
-    } catch (e) {
-      console.error(e);
-      setGeneratingPolicy(false);
-    }
+  const handleGeneratePolicy = () => {
+    router.push('/revised-policy');
   };
 
   if (!domains.length) {

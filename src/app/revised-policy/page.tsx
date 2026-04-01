@@ -6,11 +6,11 @@ import { Loader2, ArrowLeft, FileText, CheckCircle2, ShieldCheck, AlertCircle, R
 
 export default function RevisedPolicyPage() {
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(false);
   const [streamedText, setStreamedText] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
-  
+
   const [hasData, setHasData] = useState(false);
   const [extractedText, setExtractedText] = useState("");
   const [combinedGaps, setCombinedGaps] = useState("");
@@ -19,25 +19,26 @@ export default function RevisedPolicyPage() {
 
   useEffect(() => {
     if (contentEndRef.current && streamedText) {
-       contentEndRef.current.scrollIntoView({ behavior: "smooth" });
+      contentEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [streamedText]);
 
   useEffect(() => {
     const text = localStorage.getItem("extracted_text") || localStorage.getItem("extractedText");
+    console.log(text);
     const gapsRaw = localStorage.getItem("gap_analysis") || localStorage.getItem("analysisResult");
-    
+    console.log(gapsRaw);
     if (!text || !gapsRaw) {
       setErrorText("Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.");
       return;
     }
-    
+
     setExtractedText(text);
-    
+
     try {
       const parsedGaps = JSON.parse(gapsRaw);
       let results = [];
-      
+
       if (parsedGaps && parsedGaps.results && Array.isArray(parsedGaps.results)) {
         results = parsedGaps.results;
       } else if (Array.isArray(parsedGaps)) {
@@ -45,14 +46,15 @@ export default function RevisedPolicyPage() {
       } else {
         throw new Error("Invalid gap analysis format");
       }
-      
+
       const combined = results.map((result: any) => {
         const domainStr = `Domain: ${result.domain}`;
         const gapsStr = (result.gaps || []).map((g: string) => `* ${g}`).join('\n');
         return `${domainStr}\n${gapsStr}`;
       }).join('\n\n');
-      
+
       setCombinedGaps(combined);
+      console.log(combined)
       setHasData(true);
     } catch (err) {
       console.error("Error parsing gap analysis:", err);
@@ -62,11 +64,11 @@ export default function RevisedPolicyPage() {
 
   const handleGeneratePolicy = async () => {
     if (!hasData) return;
-    
+
     setLoading(true);
     setStreamedText("");
     setErrorText(null);
-    
+
     try {
       const response = await fetch("http://127.0.0.1:5000/api/revised-policy", {
         method: "POST",
@@ -150,10 +152,10 @@ export default function RevisedPolicyPage() {
               <p className="text-sm font-medium opacity-90">{errorText}</p>
             </div>
             {!hasData && (
-              <button 
+              <button
                 onClick={() => router.push("/")}
                 className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
-                >
+              >
                 Go to Upload
               </button>
             )}
@@ -178,10 +180,10 @@ export default function RevisedPolicyPage() {
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
             >
               {loading ? (
-                 <>
-                   <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                   <span>Generating...</span>
-                 </>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                  <span>Generating...</span>
+                </>
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
@@ -193,15 +195,15 @@ export default function RevisedPolicyPage() {
 
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-300 relative whitespace-pre-wrap">
             {!streamedText && !loading && (
-               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
-                 <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
-                 <p className="font-semibold text-lg text-slate-400">Ready to draft your new policy.</p>
-                 <p className="text-sm max-w-sm mt-2 font-medium">Click "Generate Revised Policy" to begin streaming real-time AI revisions.</p>
-               </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
+                <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
+                <p className="font-semibold text-lg text-slate-400">Ready to draft your new policy.</p>
+                <p className="text-sm max-w-sm mt-2 font-medium">Click "Generate Revised Policy" to begin streaming real-time AI revisions.</p>
+              </div>
             )}
-            
+
             {streamedText}
-            
+
             {loading && (
               <span className="inline-block w-2.5 h-4 ml-1 bg-blue-500 animate-pulse align-middle" />
             )}
