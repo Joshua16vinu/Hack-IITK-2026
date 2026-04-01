@@ -6,6 +6,45 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Loader2, BookOpen, Layers, CheckCircle2, ChevronRight, ShieldCheck, FileText } from 'lucide-react'
 import axios from 'axios'
 
+const StreamingText = ({ text, id, speed = 50 }: { text: string, id: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    const storageKey = `streamed_${id}`;
+    if (sessionStorage.getItem(storageKey) === 'true') {
+      setDisplayedText(text);
+      setIsComplete(true);
+      return;
+    }
+
+    setDisplayedText("");
+    setIsComplete(false);
+
+    const words = text.split(" ");
+    let i = 0;
+
+    const intervalId = setInterval(() => {
+      i++;
+      setDisplayedText(words.slice(0, i).join(" "));
+      if (i >= words.length) {
+        clearInterval(intervalId);
+        setIsComplete(true);
+        sessionStorage.setItem(storageKey, "true");
+      }
+    }, speed);
+
+    return () => clearInterval(intervalId);
+  }, [text, id, speed]);
+
+  return (
+    <span>
+      {displayedText}
+      {!isComplete && <span className="inline-block w-1.5 h-3 md:h-4 ml-1 bg-blue-500 animate-pulse align-middle" />}
+    </span>
+  );
+};
+
 interface DomainEntry {
   domain: string
   text: string | string[]
@@ -40,7 +79,7 @@ export default function ResultsPage() {
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await axios.get('http://127.0.0.1:5000/api/analyze-gaps')
-          
+
           if (statusRes.data.status === 'completed') {
             clearInterval(pollInterval)
             localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
@@ -97,9 +136,9 @@ export default function ResultsPage() {
             <ArrowLeft className="w-4 h-4" /> New Upload
           </button>
           <div className="w-px h-6 bg-slate-200" />
-          <button 
-            onClick={handleGenerate} 
-            disabled={generating} 
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 disabled:opacity-50"
           >
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate Gap Report'}
@@ -110,10 +149,10 @@ export default function ResultsPage() {
 
       {/* MAIN LAYOUT */}
       <div className="flex flex-1 overflow-hidden">
-        
+
         {/* LEFT SIDEBAR - DOMAINS & STATS */}
         <div className="w-80 shrink-0 bg-white border-r border-slate-200 flex flex-col z-40 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
-          
+
           <div className="p-6 border-b border-slate-100 bg-slate-50/50">
             <div className="mb-6">
               <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
@@ -142,7 +181,7 @@ export default function ResultsPage() {
 
           <div className="p-4 px-6 pt-5">
             <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-               <Layers className="w-3.5 h-3.5" /> Detected Categories
+              <Layers className="w-3.5 h-3.5" /> Detected Categories
             </h2>
           </div>
 
@@ -154,11 +193,10 @@ export default function ResultsPage() {
                 <button
                   key={i}
                   onClick={() => setActiveDomainIdx(i)}
-                  className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${
-                    isActive 
-                      ? 'bg-blue-50/50 border-blue-200 shadow-sm' 
-                      : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
-                  }`}
+                  className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${isActive
+                    ? 'bg-blue-50/50 border-blue-200 shadow-sm'
+                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                    }`}
                 >
                   {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />}
                   <div className="flex items-start justify-between mb-2">
@@ -199,11 +237,11 @@ export default function ResultsPage() {
               transition={{ duration: 0.2 }}
               className="max-w-4xl mx-auto space-y-8 pb-32"
             >
-              
+
               {/* Domain Header Info */}
               <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-blue-100/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                
+
                 <div className="flex flex-col sm:flex-row items-start justify-between relative z-10 gap-8">
                   <div className="space-y-4 flex-1">
                     <div className="flex items-center gap-2">
@@ -216,7 +254,7 @@ export default function ResultsPage() {
                       This domain encapsulates policies related to <strong className="text-slate-700">{activeDomain.domain.toLowerCase()}</strong>. Review the associated standards mapped below.
                     </p>
                   </div>
-                  
+
                   <div className="hidden sm:flex items-center gap-4 bg-[#f8f9fc] rounded-3xl p-5 border border-slate-100 shadow-inner shrink-0">
                     <div className="text-center px-4">
                       <p className="text-4xl font-black text-slate-800">{activeInputs}</p>
@@ -245,15 +283,15 @@ export default function ResultsPage() {
 
                   <div className="grid grid-cols-1 gap-5">
                     {activeDomain.related_nist_policies.map((p, j) => (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 + (j * 0.04) }}
-                        key={j} 
+                        key={j}
                         className="group relative bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-200 transition-all duration-300 overflow-hidden"
                       >
                         <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        
+
                         <div className="flex items-start gap-5 relative z-10">
                           <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#f8f9fc] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors duration-300">
                             <BookOpen className="w-5 h-5" />
@@ -265,7 +303,7 @@ export default function ResultsPage() {
                               </span>
                             </div>
                             <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                              {p}
+                              <StreamingText text={p} id={`${activeDomain.domain}_nist_${j}`} speed={100} />
                             </p>
                           </div>
                         </div>
@@ -275,13 +313,13 @@ export default function ResultsPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-3xl p-16 text-center border-2 border-slate-200 border-dashed">
-                   <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                     <FileText className="w-10 h-10 text-slate-300" />
-                   </div>
-                   <h3 className="text-2xl font-bold text-slate-900 mb-3">No Controls Found</h3>
-                   <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md mx-auto">
-                     The semantic analysis engine did not map any NIST standards for the input chunks in this domain.
-                   </p>
+                  <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                    <FileText className="w-10 h-10 text-slate-300" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">No Controls Found</h3>
+                  <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md mx-auto">
+                    The semantic analysis engine did not map any NIST standards for the input chunks in this domain.
+                  </p>
                 </div>
               )}
 
