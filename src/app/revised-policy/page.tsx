@@ -30,6 +30,11 @@ export default function RevisedPolicyPage() {
     console.log(text);
     const gapsRaw = localStorage.getItem(gapCacheKey)
     console.log(gapsRaw);
+
+    const cachedPolicy = localStorage.getItem(`revisedPolicy:${fileId}`);
+    if (cachedPolicy) {
+      setStreamedText(cachedPolicy);
+    }
     if (!text || !gapsRaw) {
       setErrorText("Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.");
       return;
@@ -94,6 +99,7 @@ export default function RevisedPolicyPage() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let done = false;
+      let fullText = "";
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
@@ -101,7 +107,13 @@ export default function RevisedPolicyPage() {
         if (value) {
           const chunk = decoder.decode(value, { stream: !done });
           setStreamedText((prev) => prev + chunk);
+          fullText += chunk;
         }
+      }
+
+      const fileId = localStorage.getItem("fileId");
+      if (fileId) {
+        localStorage.setItem(`revisedPolicy:${fileId}`, fullText);
       }
     } catch (err: any) {
       console.error("Streaming error:", err);
