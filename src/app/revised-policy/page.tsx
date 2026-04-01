@@ -24,9 +24,11 @@ export default function RevisedPolicyPage() {
   }, [streamedText]);
 
   useEffect(() => {
-    const text = localStorage.getItem("extracted_text") || localStorage.getItem("extractedText");
+    const fileId = localStorage.getItem("fileId");
+    const gapCacheKey = `gapAnalysis:${fileId}`;
+    const text = localStorage.getItem("extractedText");
     console.log(text);
-    const gapsRaw = localStorage.getItem("gap_analysis") || localStorage.getItem("analysisResult");
+    const gapsRaw = localStorage.getItem(gapCacheKey)
     console.log(gapsRaw);
     if (!text || !gapsRaw) {
       setErrorText("Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.");

@@ -1,12 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Loader2, BookOpen, Layers, CheckCircle2, ChevronRight, ShieldCheck, FileText, AlertCircle } from 'lucide-react'
-import axios from 'axios'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowLeft,
+  Loader2,
+  BookOpen,
+  Layers,
+  CheckCircle2,
+  ChevronRight,
+  ShieldCheck,
+  FileText,
+  AlertCircle,
+} from "lucide-react";
+import axios from "axios";
 
-const StreamingText = ({ text, id, speed = 150 }: { text: string, id: string, speed?: number }) => {
+const StreamingText = ({
+  text,
+  id,
+  speed = 150,
+}: {
+  text: string;
+  id: string;
+  speed?: number;
+}) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isComplete, setIsComplete] = useState(false);
 
@@ -14,7 +32,7 @@ const StreamingText = ({ text, id, speed = 150 }: { text: string, id: string, sp
     const fileId = localStorage.getItem("fileId") || "default";
     const storageKey = `streamed_${fileId}_${id}`;
 
-    if (sessionStorage.getItem(storageKey) === 'true') {
+    if (sessionStorage.getItem(storageKey) === "true") {
       setDisplayedText(text);
       setIsComplete(true);
       return;
@@ -42,7 +60,9 @@ const StreamingText = ({ text, id, speed = 150 }: { text: string, id: string, sp
   return (
     <span>
       {displayedText}
-      {!isComplete && <span className="inline-block w-1.5 h-3 md:h-4 ml-1 bg-blue-500 animate-pulse align-middle" />}
+      {!isComplete && (
+        <span className="inline-block w-1.5 h-3 md:h-4 ml-1 bg-blue-500 animate-pulse align-middle" />
+      )}
     </span>
   );
 };
@@ -59,9 +79,63 @@ interface GapResult {
   gaps?: string[];
 }
 
-const GAP_CACHE_PREFIX = "gapResults:";
+interface GapAnalysisCache {
+  status: GapResult["status"];
+  results: GapResult[];
+  message?: string;
+  updatedAt: number;
+}
+
+const GAP_CACHE_PREFIX = "gapAnalysis:";
 
 const getGapCacheKey = (fileId: string) => `${GAP_CACHE_PREFIX}${fileId}`;
+
+const readGapAnalysisCache = (fileId: string): GapAnalysisCache | null => {
+  if (typeof window === "undefined") return null;
+
+  const raw = localStorage.getItem(getGapCacheKey(fileId));
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const results = Array.isArray(parsed?.results) ? parsed.results : [];
+    const status: GapResult["status"] =
+      parsed?.status === "completed" ||
+      parsed?.status === "failed" ||
+      parsed?.status === "processing"
+        ? parsed.status
+        : results.length > 0
+          ? "processing"
+          : "processing";
+
+    return {
+      status,
+      results,
+      message: typeof parsed?.message === "string" ? parsed.message : undefined,
+      updatedAt:
+        typeof parsed?.updatedAt === "number" ? parsed.updatedAt : Date.now(),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeGapAnalysisCache = (
+  fileId: string,
+  cache: Partial<GapAnalysisCache>,
+) => {
+  if (typeof window === "undefined") return;
+
+  const existing = readGapAnalysisCache(fileId);
+  const nextCache: GapAnalysisCache = {
+    status: cache.status ?? existing?.status ?? "processing",
+    results: cache.results ?? existing?.results ?? [],
+    message: cache.message ?? existing?.message,
+    updatedAt: Date.now(),
+  };
+
+  localStorage.setItem(getGapCacheKey(fileId), JSON.stringify(nextCache));
+};
 
 const getCachedDomains = (): DomainEntry[] => {
   if (typeof window === "undefined") return [];
@@ -78,76 +152,167 @@ const getCachedDomains = (): DomainEntry[] => {
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [domains] = useState<DomainEntry[]>(() => getCachedDomains());
+  const [domains, setDomains] = useState<DomainEntry[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [activeDomainIdx, setActiveDomainIdx] = useState<number>(0);
-  const [generatingPolicy, setGeneratingPolicy] = useState(false);
   const [gapResults, setGapResults] = useState<GapResult[]>([]);
   const [analyzing, setAnalyzing] = useState(true);
   const startedRef = useRef(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gapResultsRef = useRef<GapResult[]>([]);
 
-  async function startGapAnalysis(domainData: DomainEntry[], fileId: string) {
-    try {
-      setAnalyzing(true);
-      const startRes = await axios.post(
-        "http://127.0.0.1:5000/api/analyze-gaps",
-        domainData,
-      );
-
-      const checkCompleted = (results: GapResult[]) =>
-        results?.length > 0 &&
-        results.every(
-          (result: GapResult) =>
-            result.status === "completed" || result.status === "failed",
-        );
-
-      const currentResults = Array.isArray(startRes.data)
-        ? startRes.data
-        : startRes.data?.results || [];
-      setGapResults(currentResults);
-
-      localStorage.setItem(
-        getGapCacheKey(fileId),
-        JSON.stringify({ results: currentResults }),
-      );
-
-      if (checkCompleted(currentResults)) {
-        setAnalyzing(false);
-        return;
-      }
-
-      const pollInterval = setInterval(async () => {
-        try {
-          const statusRes = await axios.get('http://127.0.0.1:5000/api/analyze-gaps')
-
-          if (statusRes.data.results && Array.isArray(statusRes.data.results)) {
-            setGapResults(statusRes.data.results);
-          }
-
-          if (statusRes.data.status === 'completed') {
-            clearInterval(pollInterval)
-            localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
-            localStorage.setItem(getGapCacheKey(fileId), JSON.stringify({ results: statusRes.data.results }))
-            setAnalyzing(false)
-            // router.push('/analysis')
-          } else if (statusRes.data.status === 'failed') {
-            clearInterval(pollInterval)
-            console.error('Job failed:', statusRes.data)
-            setAnalyzing(false)
-          }
-        } catch (e) {
-          console.error("Polling error:", e);
-          clearInterval(pollInterval);
-          setAnalyzing(false);
-        }
-      }, 5000);
-    } catch (e) {
-      console.error(e);
-      setAnalyzing(false);
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
-  }
+  };
+
+  const updateGapResults = useCallback((nextResults: GapResult[]) => {
+    gapResultsRef.current = nextResults;
+    setGapResults(nextResults);
+  }, []);
+
+  const updateAnalyzing = useCallback((nextAnalyzing: boolean) => {
+    setAnalyzing(nextAnalyzing);
+  }, []);
+
+  const syncGapState = useCallback(
+    (
+      fileId: string,
+      payload: Partial<GapAnalysisCache> & {
+        results?: GapResult[];
+        status: GapResult["status"];
+      },
+    ) => {
+      const nextResults = payload.results ?? gapResultsRef.current;
+      updateGapResults(nextResults);
+      updateAnalyzing(payload.status === "processing");
+      writeGapAnalysisCache(fileId, {
+        status: payload.status,
+        results: nextResults,
+        message: payload.message,
+      });
+    },
+    [updateAnalyzing, updateGapResults],
+  );
 
   useEffect(() => {
-    if (startedRef.current) return;
+    const rafId = requestAnimationFrame(() => {
+      setIsHydrated(true);
+      setDomains(getCachedDomains());
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, []);
+
+  const startGapAnalysis = useCallback(
+    async (domainData: DomainEntry[], fileId: string) => {
+      try {
+        updateAnalyzing(true);
+        const startRes = await axios.post(
+          "http://127.0.0.1:5000/api/analyze-gaps",
+          domainData,
+        );
+
+        const currentResults = Array.isArray(startRes.data)
+          ? startRes.data
+          : Array.isArray(startRes.data?.results)
+            ? startRes.data.results
+            : [];
+        const currentStatus: GapResult["status"] =
+          startRes.data?.status === "completed" ||
+          startRes.data?.status === "failed"
+            ? startRes.data.status
+            : "processing";
+
+        if (currentResults.length > 0) {
+          syncGapState(fileId, {
+            status: currentStatus,
+            results: currentResults,
+            message: startRes.data?.message,
+          });
+        } else {
+          const cached = readGapAnalysisCache(fileId);
+          if (cached) {
+            queueMicrotask(() => {
+              updateGapResults(cached.results);
+              updateAnalyzing(cached.status === "processing");
+            });
+          }
+          writeGapAnalysisCache(fileId, {
+            status: currentStatus,
+            message: startRes.data?.message,
+          });
+        }
+
+        if (
+          currentStatus === "completed" ||
+          currentStatus === "failed" ||
+          (currentResults.length > 0 &&
+            currentResults.every(
+              (result: GapResult) =>
+                result.status === "completed" || result.status === "failed",
+            ))
+        ) {
+          stopPolling();
+          updateAnalyzing(false);
+          return;
+        }
+
+        stopPolling();
+        pollIntervalRef.current = setInterval(async () => {
+          try {
+            const statusRes = await axios.get(
+              "http://127.0.0.1:5000/api/analyze-gaps",
+            );
+            const polledResults = Array.isArray(statusRes.data?.results)
+              ? statusRes.data.results
+              : undefined;
+            const polledStatus: GapResult["status"] =
+              statusRes.data?.status === "completed" ||
+              statusRes.data?.status === "failed"
+                ? statusRes.data.status
+                : "processing";
+
+            if (polledResults) {
+              syncGapState(fileId, {
+                status: polledStatus,
+                results: polledResults,
+                message: statusRes.data?.message,
+              });
+            } else {
+              writeGapAnalysisCache(fileId, {
+                status: polledStatus,
+                message: statusRes.data?.message,
+              });
+              updateAnalyzing(polledStatus === "processing");
+            }
+
+            if (polledStatus === "completed") {
+              stopPolling();
+              updateAnalyzing(false);
+            } else if (polledStatus === "failed") {
+              stopPolling();
+              console.error("Job failed:", statusRes.data);
+              updateAnalyzing(false);
+            }
+          } catch (e) {
+            console.error("Polling error:", e);
+            stopPolling();
+            updateAnalyzing(false);
+          }
+        }, 5000);
+      } catch (e) {
+        console.error(e);
+        updateAnalyzing(false);
+      }
+    },
+    [syncGapState, updateAnalyzing, updateGapResults],
+  );
+
+  useEffect(() => {
+    if (!isHydrated || startedRef.current) return;
     if (!domains.length) {
       router.replace("/");
       return;
@@ -162,32 +327,15 @@ export default function ResultsPage() {
         return;
       }
 
-      const cacheStorageKey = getGapCacheKey(fileId);
+      const cached = readGapAnalysisCache(fileId);
+      if (cached) {
+        queueMicrotask(() => {
+          updateGapResults(cached.results);
+          updateAnalyzing(cached.status === "processing");
+        });
 
-      const cachedRaw = localStorage.getItem(cacheStorageKey);
-      if (cachedRaw) {
-        try {
-          const cached = JSON.parse(cachedRaw);
-          const cachedResults = Array.isArray(cached?.results)
-            ? (cached.results as GapResult[])
-            : [];
-          if (cachedResults.length > 0) {
-            queueMicrotask(() => {
-              setGapResults(cachedResults);
-            });
-            const isCompleted = cachedResults.every(
-              (result) =>
-                result.status === "completed" || result.status === "failed",
-            );
-            if (isCompleted) {
-              queueMicrotask(() => {
-                setAnalyzing(false);
-              });
-              return;
-            }
-          }
-        } catch (cacheError) {
-          console.error("Failed to parse cached gap analysis", cacheError);
+        if (cached.status === "completed" || cached.status === "failed") {
+          return;
         }
       }
 
@@ -197,13 +345,16 @@ export default function ResultsPage() {
     } catch {
       router.replace("/");
     }
-  }, [router, domains]);
+    return () => {
+      stopPolling();
+    };
+  }, [isHydrated, router, domains, startGapAnalysis, updateAnalyzing, updateGapResults]);
 
   const handleGeneratePolicy = () => {
-    router.push('/revised-policy');
+    router.push("/revised-policy");
   };
 
-  if (!domains.length) {
+  if (!isHydrated || !domains.length) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -250,17 +401,11 @@ export default function ResultsPage() {
           <div className="w-px h-6 bg-slate-200" />
           <button
             onClick={handleGeneratePolicy}
-            disabled={generatingPolicy || analyzing}
+            disabled={analyzing}
             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 disabled:opacity-50"
           >
-            {generatingPolicy ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Generate Revised Policy"
-            )}
-            {!generatingPolicy && (
-              <ChevronRight className="w-4 h-4 opacity-70" />
-            )}
+            {"Generate Revised Policy"}
+            <ChevronRight className="w-4 h-4 opacity-70" />
           </button>
         </div>
       </header>
@@ -443,10 +588,10 @@ export default function ResultsPage() {
                       >
                         {activeGapData.gaps.map((gap, j) => (
                           <div
-                            className="flex items-center gap-4 relative z-10"
+                            className="flex items-start gap-4 relative z-10"
                             key={j}
                           >
-                            <div className="w-2.5 h-2.5 shrink-0 rounded-full bg-red-400" />
+                            <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
                             <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
                               <StreamingText
                                 text={gap}

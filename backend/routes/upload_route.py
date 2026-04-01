@@ -37,11 +37,6 @@ async def upload_pdf(
     contents = await file.read()
     file_id = generate_file_id(contents, domain)
 
-    # ── Cache hit: return stored result immediately ───────────────────────────
-    if result_exists(file_id):
-        cached = load_result(file_id)
-        return {"file_id": file_id, "cached": True, "result": cached}
-
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
@@ -58,6 +53,11 @@ async def upload_pdf(
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
         )
 
+    # ── Cache hit: return stored result immediately ───────────────────────────
+    if result_exists(file_id):
+        cached = load_result(file_id)
+        return {"file_id": file_id, "cached": True, "result": cached, "extracted_text": text}
+    
     if not domain:
         # Chunk text for further processing
         try:
