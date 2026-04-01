@@ -98,7 +98,7 @@ async def upload_pdf(
 
         domain_wise_chunks = [{
          "domain": domain,
-         "text": input_chunks   # ✅ list of chunks
+         "text": input_chunks
         }]
         
     try:
@@ -112,4 +112,4 @@ async def upload_pdf(
     # ── Persist result and return with file_id ────────────────────────────────
     save_result(file_id, domain_chunks_policies)
 
-    return {"file_id": file_id, "cached": False, "result": domain_chunks_policies}
+    return {"file_id": file_id, "cached": False, "result": domain_chunks_policies, "extracted_text": text}
