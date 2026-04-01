@@ -145,6 +145,13 @@ export default function RevisedPolicyPage() {
           >
             <ArrowLeft className="w-4 h-4" /> Back to Analysis
           </button>
+          <div className="w-px h-6 bg-slate-200 hidden sm:block" />
+          <button
+            onClick={() => router.push("/roadmap")}
+            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-blue-50"
+          >
+            Go to Roadmap <ArrowLeft className="w-4 h-4 rotate-180" />
+          </button>
         </div>
       </header>
 
