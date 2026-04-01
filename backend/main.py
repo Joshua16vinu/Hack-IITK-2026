@@ -6,7 +6,7 @@ import time
 import os
 import uvicorn
 
-from constants import UPLOAD_FOLDER
+from constants import UPLOAD_FOLDER, STORAGE_FOLDER
 from helpers.logger import setup_logging, get_logger
 from routes.upload_route import upload_router
 from routes.revision_route import revision_router
@@ -31,7 +31,6 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    from constants import STORAGE_FOLDER
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     os.makedirs(STORAGE_FOLDER, exist_ok=True)
     logger.info("Backend startup complete. Upload folder ready at %s", UPLOAD_FOLDER)
