@@ -1,4 +1,5 @@
 from helpers.llm_helper import call_llm
+from helpers.logger import get_logger
 from prompts.gap_analysis import GAP_ANALYSIS_PROMPT
 
 current_job = {
@@ -6,9 +7,12 @@ current_job = {
     "results": []
 }
 
+logger = get_logger(__name__)
+
 
 def process_data(data):
     try:
+        logger.info("Gap analysis worker started for %s domains", len(data))
         current_job["results"] = [
             {
                 "domain": item.get("domain"),
@@ -51,11 +55,14 @@ def process_data(data):
                     "status": "failed",
                     "error": str(e)
                 }
+                logger.exception("Gap analysis failed for domain=%s", domain)
 
             current_job["completed"] += 1
 
         current_job["status"] = "completed"
+        logger.info("Gap analysis worker completed successfully")
 
     except Exception as e:
         current_job["status"] = "failed"
         current_job["error"] = str(e)
+        logger.exception("Gap analysis worker failed")

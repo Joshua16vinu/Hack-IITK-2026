@@ -6,11 +6,13 @@ from typing import Optional
 
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.chunking_helper import sentence_based_chunking
+from helpers.logger import get_logger
 from constants import UPLOAD_FOLDER
 from services.upload_service import classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
 from services.storage_service import generate_file_id, result_exists, load_result, save_result
 
 upload_router = APIRouter()
+logger = get_logger(__name__)
 
 @upload_router.post("/upload-pdf")
 async def upload_pdf(
@@ -25,17 +27,21 @@ async def upload_pdf(
 
     # Validate file
     if not file or file.filename == "":
+        logger.warning("Upload request rejected because no file was provided")
         raise HTTPException(status_code=400, detail="No file found")
 
     if not (file.filename.lower().endswith(".pdf")):
+        logger.warning("Upload request rejected because file was not a PDF: %s", file.filename)
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     if not UPLOAD_FOLDER:
+        logger.error("Upload folder is not configured")
         raise HTTPException(status_code=500, detail="Upload folder not configured")
 
     # ── Read bytes once, derive deterministic file_id ────────────────────────
     contents = await file.read()
     file_id = generate_file_id(contents, domain)
+    logger.info("Processing upload for file=%s domain=%s file_id=%s", file.filename, domain or "auto", file_id)
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -48,6 +54,7 @@ async def upload_pdf(
     try:
         text = extract_text_from_pdf(file_path)
     except ValueError as e:
+        logger.exception("PDF extraction failed for file_id=%s", file_id)
         raise HTTPException(
             status_code=400,
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
@@ -56,14 +63,16 @@ async def upload_pdf(
     # ── Cache hit: return stored result immediately ───────────────────────────
     if result_exists(file_id):
         cached = load_result(file_id)
+        logger.info("Cache hit for file_id=%s", file_id)
         return {"file_id": file_id, "cached": True, "result": cached, "extracted_text": text}
     
     if not domain:
         # Chunk text for further processing
         try:
             input_chunks = sentence_based_chunking(text)
-            print(f"Total chunks created: {len(input_chunks)}")
+            logger.info("Created %s chunks for file_id=%s", len(input_chunks), file_id)
         except Exception as e:
+            logger.exception("Chunking failed for file_id=%s", file_id)
             raise HTTPException(
                 status_code=500,
                 detail=json.dumps({"message": "Chunking failed", "error": str(e)})
@@ -74,6 +83,7 @@ async def upload_pdf(
             for chunk in input_chunks:
                 classes.append(classify_pdf_chunk(chunk))
         except Exception as e:
+            logger.exception("Classification failed for file_id=%s", file_id)
             raise HTTPException(
                 status_code=500,
                 detail=json.dumps({"message": "Classification failed", "error": str(e)})
@@ -82,6 +92,7 @@ async def upload_pdf(
         try:
             domain_wise_chunks = restructure_chunks_by_domain(classes)
         except Exception as e:
+            logger.exception("Restructuring failed for file_id=%s", file_id)
             raise HTTPException(
                 status_code=500,
                 detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
@@ -89,8 +100,9 @@ async def upload_pdf(
     else:
         try:
           input_chunks = sentence_based_chunking(text)
-          print(f"Total chunks created: {len(input_chunks)}")
+          logger.info("Created %s chunks for file_id=%s using provided domain", len(input_chunks), file_id)
         except Exception as e:
+          logger.exception("Chunking failed for file_id=%s", file_id)
           raise HTTPException(
             status_code=500,
             detail=json.dumps({"message": "Chunking failed", "error": str(e)})
@@ -104,6 +116,7 @@ async def upload_pdf(
     try:
         domain_chunks_policies = get_domain_chunks_with_policies(domain_wise_chunks)
     except Exception as e:
+        logger.exception("Policy retrieval failed for file_id=%s", file_id)
         raise HTTPException(
             status_code=500,
             detail=json.dumps({"message": "Policy retrieval failed", "error": str(e)})
@@ -111,5 +124,6 @@ async def upload_pdf(
 
     # ── Persist result and return with file_id ────────────────────────────────
     save_result(file_id, domain_chunks_policies)
+    logger.info("Upload processing completed for file_id=%s", file_id)
 
     return {"file_id": file_id, "cached": False, "result": domain_chunks_policies, "extracted_text": text}
