@@ -28,7 +28,7 @@ export default function ResultsPage() {
     if (!domains[0]) return
     setGenerating(true)
     try {
-      const res = await axios.post('http://127.0.0.1:5000/api/analyze-domain', domains[0])
+      const res = await axios.post('http://127.0.0.1:5000/api/analyze-gap', domains[0])
       localStorage.setItem('analysisResult', JSON.stringify(res.data))
       router.push('/analysis')
     } catch (e) {
