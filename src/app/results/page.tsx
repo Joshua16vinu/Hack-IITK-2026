@@ -28,9 +28,35 @@ export default function ResultsPage() {
     if (!domains[0]) return
     setGenerating(true)
     try {
-      const res = await axios.post('http://127.0.0.1:5000/api/analyze-gap', domains[0])
-      localStorage.setItem('analysisResult', JSON.stringify(res.data))
-      router.push('/analysis')
+      const startRes = await axios.post('http://127.0.0.1:5000/api/analyze-gaps', domains)
+
+      if (startRes.data.status === 'completed') {
+        localStorage.setItem('analysisResult', JSON.stringify(startRes.data.results || []))
+        setGenerating(false)
+        router.push('/analysis')
+        return
+      }
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const statusRes = await axios.get('http://127.0.0.1:5000/api/analyze-gaps')
+          
+          if (statusRes.data.status === 'completed') {
+            clearInterval(pollInterval)
+            localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
+            setGenerating(false)
+            router.push('/analysis')
+          } else if (statusRes.data.status === 'failed') {
+            clearInterval(pollInterval)
+            console.error('Job failed:', statusRes.data)
+            setGenerating(false)
+          }
+        } catch (e) {
+          console.error('Polling error:', e)
+          clearInterval(pollInterval)
+          setGenerating(false)
+        }
+      }, 15000)
     } catch (e) {
       console.error(e)
       setGenerating(false)

@@ -1,34 +1,34 @@
 from fastapi import APIRouter, Request, BackgroundTasks
-from fastapi.responses import StreamingResponse
-import uuid
 
-from backend.services.gaps_service import process_data
+from services.gaps_service import process_data, current_job
 
 gaps_router = APIRouter()
-jobs = {}
 
 @gaps_router.post("/analyze-gaps")
 async def analyze_gaps(request: Request, background_tasks: BackgroundTasks):
+    global current_job
+
+    if current_job["status"] == "processing":
+        return {"message": "LLM already running", "status": "processing"}
+
     data = await request.json()
 
-    job_id = str(uuid.uuid4())
+    # ✅ Handle empty input
+    if not data:
+        return {"status": "failed", "message": "No data provided"}
 
-    # create job
-    jobs[job_id] = {
-        "status": "processing",
-        "results": []
-    }
+    # reset state
+    current_job["status"] = "processing"
+    current_job["results"] = []
+    current_job["completed"] = 0
+    current_job["total"] = 0
+    current_job.pop("error", None)
 
-    # run in background
-    background_tasks.add_task(process_data, job_id, data)
+    background_tasks.add_task(process_data, data)
 
-    return {
-        "job_id": job_id,
-        "status": "processing"
-    }
-    
-    
+    return current_job
 
-@gaps_router.get("/analyze-gaps/{job_id}")
-async def get_status(job_id: str):
-    return jobs.get(job_id, {"status": "not_found"})
+
+@gaps_router.get("/analyze-gaps")
+async def get_status():
+    return current_job
