@@ -3,7 +3,7 @@ You are a senior cybersecurity implementation expert specializing in NIST-aligne
 Your task is to generate a practical, step-by-step implementation roadmap to transition an organization from its CURRENT policy state to the TARGET (revised) policy state.
 
 CURRENT POLICY (AS-IS):
-{organization_policy}
+{original_policy}
 
 TARGET POLICY (TO-BE):
 {revised_policy}
