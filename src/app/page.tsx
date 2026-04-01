@@ -33,6 +33,9 @@ export default function EnterpriseDashboard() {
     const domains = Array.isArray(data) ? data : (data?.result ?? []);
     setUploadedDomains(domains);
     localStorage.setItem("uploadedDomains", JSON.stringify(domains));
+    if (data?.extracted_text) {
+      localStorage.setItem("extractedText", data.extracted_text);
+    }
   };
 
   return (
