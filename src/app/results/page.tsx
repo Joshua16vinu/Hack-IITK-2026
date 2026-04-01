@@ -156,6 +156,7 @@ export default function ResultsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeDomainIdx, setActiveDomainIdx] = useState<number>(0);
   const [gapResults, setGapResults] = useState<GapResult[]>([]);
+  const [hasRevisedPolicy, setHasRevisedPolicy] = useState(false);
   const [analyzing, setAnalyzing] = useState(true);
   const startedRef = useRef(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -201,6 +202,10 @@ export default function ResultsPage() {
     const rafId = requestAnimationFrame(() => {
       setIsHydrated(true);
       setDomains(getCachedDomains());
+      const fileId = localStorage.getItem("fileId");
+      if (fileId && localStorage.getItem(`revisedPolicy:${fileId}`)) {
+        setHasRevisedPolicy(true);
+      }
     });
 
     return () => cancelAnimationFrame(rafId);
@@ -402,9 +407,16 @@ export default function ResultsPage() {
           <button
             onClick={handleGeneratePolicy}
             disabled={analyzing}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {"Generate Revised Policy"}
+          </button>
+          <button
+            onClick={() => router.push("/roadmap")}
+            disabled={!hasRevisedPolicy}
+            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {"Go to Roadmap"}
             <ChevronRight className="w-4 h-4 opacity-70" />
           </button>
         </div>

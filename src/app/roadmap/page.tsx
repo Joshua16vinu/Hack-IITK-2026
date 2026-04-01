@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle, Map } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle, Map, Compass } from 'lucide-react';
 
 export default function RoadmapPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function RoadmapPage() {
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const [hasData, setHasData] = useState(false);
+  const autoStartRef = useRef(false);
   const [inputPolicy, setInputPolicy] = useState("");
   const [revisedPolicy, setRevisedPolicy] = useState("");
 
@@ -97,6 +98,17 @@ export default function RoadmapPage() {
     }
   };
 
+  useEffect(() => {
+    if (hasData && !autoStartRef.current) {
+      const fileId = localStorage.getItem("fileId");
+      const cachedRoadmap = localStorage.getItem(`roadmap:${fileId}`);
+      if (!cachedRoadmap) {
+        autoStartRef.current = true;
+        handleGenerateRoadmap();
+      }
+    }
+  }, [hasData]);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
       <header className="shrink-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-50 px-6 flex items-center justify-between sticky top-0">
@@ -175,7 +187,7 @@ export default function RoadmapPage() {
               ) : (
                 <>
                   <Map className="w-4 h-4 text-slate-300 group-hover:scale-110 transition-transform duration-500" />
-                  <span>Generate Roadmap</span>
+                  <span>Regenerate Roadmap</span>
                 </>
               )}
             </button>
@@ -186,7 +198,29 @@ export default function RoadmapPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
                 <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
                 <p className="font-semibold text-lg text-slate-400">Ready to plan your execution.</p>
-                <p className="text-sm max-w-sm mt-2 font-medium">Click "Generate Roadmap" to outline the implementation steps.</p>
+                <p className="text-sm max-w-sm mt-2 font-medium">Click "Regenerate Roadmap" to outline the implementation steps.</p>
+              </div>
+            )}
+
+            {!streamedText && loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50/80 backdrop-blur-sm z-10 transition-all duration-500">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-indigo-400 opacity-20 duration-1000" />
+                  <div className="relative bg-white shadow-xl shadow-indigo-900/5 rounded-full p-5 border border-indigo-100">
+                    <Compass className="w-10 h-10 text-indigo-500 animate-[spin_3s_linear_infinite]" />
+                  </div>
+                </div>
+                <h3 className="font-extrabold text-xl text-slate-800 tracking-tight mb-2">
+                  Plotting Strategic Roadmap...
+                </h3>
+                <p className="text-sm font-medium text-slate-500 max-w-xs leading-relaxed">
+                  Analyzing the revised policy against your original boundaries to orchestrate a step-by-step rollout plan.
+                </p>
+                <div className="flex items-center gap-1.5 mt-6">
+                  <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             )}
 

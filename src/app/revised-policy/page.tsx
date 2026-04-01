@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, FileText, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, ArrowLeft, FileText, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 
 export default function RevisedPolicyPage() {
   const router = useRouter();
@@ -12,6 +12,7 @@ export default function RevisedPolicyPage() {
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const [hasData, setHasData] = useState(false);
+  const autoStartRef = useRef(false);
   const [extractedText, setExtractedText] = useState("");
   const [combinedGaps, setCombinedGaps] = useState("");
 
@@ -123,6 +124,17 @@ export default function RevisedPolicyPage() {
     }
   };
 
+  useEffect(() => {
+    if (hasData && !autoStartRef.current) {
+      const fileId = localStorage.getItem("fileId");
+      const cachedPolicy = localStorage.getItem(`revisedPolicy:${fileId}`);
+      if (!cachedPolicy) {
+        autoStartRef.current = true;
+        handleGeneratePolicy();
+      }
+    }
+  }, [hasData]);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
       <header className="shrink-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-50 px-6 flex items-center justify-between sticky top-0">
@@ -148,7 +160,12 @@ export default function RevisedPolicyPage() {
           <div className="w-px h-6 bg-slate-200 hidden sm:block" />
           <button
             onClick={() => router.push("/roadmap")}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-blue-50"
+            disabled={!streamedText || loading}
+            className={`flex items-center gap-2 text-sm font-bold transition-colors px-3 py-2 rounded-lg ${
+              !streamedText || loading
+                ? "text-slate-400 cursor-not-allowed"
+                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            }`}
           >
             Go to Roadmap <ArrowLeft className="w-4 h-4 rotate-180" />
           </button>
@@ -208,7 +225,7 @@ export default function RevisedPolicyPage() {
               ) : (
                 <>
                   <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>Generate Revised Policy</span>
+                  <span>Regenerate Policy</span>
                 </>
               )}
             </button>
@@ -219,10 +236,32 @@ export default function RevisedPolicyPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
                 <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
                 <p className="font-semibold text-lg text-slate-400">Ready to draft your new policy.</p>
-                <p className="text-sm max-w-sm mt-2 font-medium">Click "Generate Revised Policy" to begin streaming real-time AI revisions.</p>
+                <p className="text-sm max-w-sm mt-2 font-medium">Click "Regenerate Policy" to begin streaming real-time AI revisions.</p>
               </div>
             )}
 
+            {!streamedText && loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-50/80 backdrop-blur-sm z-10 transition-all duration-500">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 animate-ping rounded-full bg-blue-400 opacity-20 duration-1000" />
+                  <div className="relative bg-white shadow-xl shadow-blue-900/5 rounded-full p-5 border border-blue-100">
+                    <Sparkles className="w-10 h-10 text-blue-500 animate-pulse" />
+                  </div>
+                </div>
+                <h3 className="font-extrabold text-xl text-slate-800 tracking-tight mb-2">
+                  AI is conceptualizing...
+                </h3>
+                <p className="text-sm font-medium text-slate-500 max-w-xs leading-relaxed">
+                  Synthesizing domain controls and filling existing gaps to draft a comprehensive revised policy.
+                </p>
+                <div className="flex items-center gap-1.5 mt-6">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+            
             {streamedText}
 
             {loading && (
