@@ -23,7 +23,10 @@ Please follow these steps in order to start the application.
    ```bash
    ollama serve
    ```
-*(Note: If the application uses a specific model, make sure to pull it using `ollama pull <model-name>`)*
+3. Pull the required LLM model:
+   ```bash
+   ollama pull mistral
+   ```
 
 ### 2. Backend Setup
 1. Open a new terminal and navigate to the backend directory:
@@ -43,14 +46,20 @@ Please follow these steps in order to start the application.
    ```bash
    pip install -r requirements.txt
    ```
-4. Start ChromaDB (in a separate terminal with venv activated):
+4. Download the local embedding model:
+   ```bash
+   python download_embedding_model.py
+   ```
+   *This downloads `all-MiniLM-L6-v2` into `backend/models/` for embedding generation.*
+
+5. Start ChromaDB (in a separate terminal with venv activated):
    ```bash
    source venv/bin/activate  # Make sure venv is activated
    chroma run --host 0.0.0.0 --port 8000 --path ./chroma_data
    ```
    *ChromaDB will now be running on `http://127.0.0.1:8000`.*
 
-5.  Run ChromaDB ingestion to populate the database:
+6. Run ChromaDB ingestion to populate the database:
    ```bash
    # Ingest NIST data
    python -m ingestion.ingest_nist
@@ -59,7 +68,7 @@ Please follow these steps in order to start the application.
    python -m ingestion.ingest_domain_data
    ```
 
-6. Start the FastAPI backend server (in the original backend terminal):
+7. Start the FastAPI backend server (in the original backend terminal):
    ```bash
    uvicorn main:app --port 5000 --reload
    ```
@@ -84,6 +93,17 @@ Please follow these steps in order to start the application.
    bun dev
    ```
 5. **Open the Application**: Navigate to [http://localhost:3000](http://localhost:3000) in your web browser.
+
+## Quick Health Checks
+- Verify Ollama model is available:
+   ```bash
+   ollama list
+   ```
+- Verify backend LLM connectivity:
+   ```bash
+   cd backend
+   python -m test_scripts.test_ollama
+   ```
 
 ## Project Structure
 - `src/app/`: Next.js application pages and layout

@@ -28,45 +28,46 @@ def ensure_ollama_running():
         logger.info("Ollama startup wait complete")
 
 
-def call_llm(
-    prompt: str,
-) -> Any:
+def call_llm(prompt: str) -> Any:
     ensure_ollama_running()
 
     payload = {
-        "model":  MODEL_NAME,
+        "model": MODEL_NAME,
         "prompt": prompt,
+        "stream": False,
         "options": {
             "temperature": 0.1,
             "top_p": 0.8,
-            "num_ctx": 4096,
-            "num_predict": 900
+            # "num_ctx": 4096,
+            "num_predict": 512
         }
     }
 
     logger.debug("Sending LLM payload with model=%s", MODEL_NAME)
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json=payload
-    )
-    response.raise_for_status()
-    try:
-        body = response.json()
-    except ValueError:
-        lines = [line for line in response.text.splitlines() if line.strip()]
-        if not lines:
-            raise
 
-        parsed_lines = [json.loads(line) for line in lines]
-        generated_text = "".join(item.get("response", "") for item in parsed_lines)
-        body = {"response": generated_text}
-    print("LLM raw response body:", body)
-    generated_text = body.get("response", "")
-    logger.info("LLM response received")
     try:
-        return json.loads(generated_text)
-    except (TypeError, json.JSONDecodeError):
-        return generated_text
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json=payload,
+            # timeout=60
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("LLM request failed: %s", e)
+        raise
+    
+    body = response.json() 
+    logger.debug("LLM raw response body: %s", body) 
+    
+    generated_text = body.get("response", "") 
+    logger.info("LLM response received") 
+    
+    try: 
+        return json.loads(generated_text) 
+    except (TypeError, json.JSONDecodeError) as e: 
+        logger.warning("Failed to parse LLM output as JSON: %s", e) 
+        return generated_text.strip()
+    
 
 def stream_llm(prompt: str) -> Iterator[str]:
     ensure_ollama_running()
