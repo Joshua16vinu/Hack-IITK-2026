@@ -36,6 +36,9 @@ export default function EnterpriseDashboard() {
     if (data?.extracted_text) {
       localStorage.setItem("extractedText", data.extracted_text);
     }
+    if (data?.file_id) {
+      localStorage.setItem("fileId", data.file_id);
+    }
   };
 
   return (
