@@ -119,9 +119,14 @@ export default function ResultsPage() {
         try {
           const statusRes = await axios.get('http://127.0.0.1:5000/api/analyze-gaps')
 
+          if (statusRes.data.results && Array.isArray(statusRes.data.results)) {
+            setGapResults(statusRes.data.results);
+          }
+
           if (statusRes.data.status === 'completed') {
             clearInterval(pollInterval)
             localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
+            localStorage.setItem(getGapCacheKey(fileId), JSON.stringify({ results: statusRes.data.results }))
             setAnalyzing(false)
             // router.push('/analysis')
           } else if (statusRes.data.status === 'failed') {
