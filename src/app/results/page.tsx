@@ -250,7 +250,7 @@ export default function ResultsPage() {
           <div className="w-px h-6 bg-slate-200" />
           <button
             onClick={handleGeneratePolicy}
-            disabled={generatingPolicy}
+            disabled={generatingPolicy || analyzing}
             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 disabled:opacity-50"
           >
             {generatingPolicy ? (
@@ -267,10 +267,8 @@ export default function ResultsPage() {
 
       {/* MAIN LAYOUT */}
       <div className="flex flex-1 overflow-hidden">
-
         {/* LEFT SIDEBAR - DOMAINS & STATS */}
         <div className="w-80 shrink-0 bg-white border-r border-slate-200 flex flex-col z-40 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
-
           <div className="p-6 border-b border-slate-100 bg-slate-50/50">
             <div className="mb-6">
               <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
@@ -311,10 +309,11 @@ export default function ResultsPage() {
                 <button
                   key={i}
                   onClick={() => setActiveDomainIdx(i)}
-                  className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${isActive
-                    ? 'bg-blue-50/50 border-blue-200 shadow-sm'
-                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
-                    }`}
+                  className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${
+                    isActive
+                      ? "bg-blue-50/50 border-blue-200 shadow-sm"
+                      : "bg-white border-transparent hover:bg-slate-50 hover:border-slate-200"
+                  }`}
                 >
                   {isActive && (
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
@@ -374,7 +373,6 @@ export default function ResultsPage() {
               transition={{ duration: 0.2 }}
               className="max-w-4xl mx-auto space-y-8 pb-32"
             >
-
               {/* Domain Header Info */}
               <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-blue-100/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
@@ -387,7 +385,7 @@ export default function ResultsPage() {
                     <p className="text-slate-500 font-medium max-w-xl text-base leading-relaxed">
                       This domain encapsulates policies related to{" "}
                       <strong className="text-slate-700">
-                        {activeDomain.domain.toLowerCase()}
+                        {activeDomain.domain}
                       </strong>
                       . Review the associated standards mapped below.
                     </p>
@@ -395,25 +393,25 @@ export default function ResultsPage() {
 
                   <div className="hidden sm:flex items-center gap-4 bg-[#f8f9fc] rounded-3xl p-5 border border-slate-100 shadow-inner shrink-0">
                     <div className="text-center px-4">
-                      {!activeGapData ||
-                        activeGapData.status === "processing" ? (
-                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-blue-500 mb-2" />
-                      ) : (
-                        <p className="text-4xl font-black text-red-500">
-                          {activeGapsCount}
-                        </p>
-                      )}
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                        Identified Gaps
-                      </p>
-                    </div>
-                    <div className="w-px h-16 bg-slate-200" />
-                    <div className="text-center px-4">
                       <p className="text-4xl font-black text-blue-600">
                         {activeNist}
                       </p>
                       <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1">
                         NIST Controls
+                      </p>
+                    </div>
+                    <div className="w-px h-16 bg-slate-200" />
+                    <div className="text-center px-4">
+                      {!activeGapData ||
+                      activeGapData.status === "processing" ? (
+                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-red-500 mb-2" />
+                      ) : (
+                        <p className="text-4xl font-black text-red-500">
+                          {activeGapsCount}
+                        </p>
+                      )}
+                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mt-1">
+                        Identified Gaps
                       </p>
                     </div>
                   </div>
@@ -445,12 +443,16 @@ export default function ResultsPage() {
                       >
                         {activeGapData.gaps.map((gap, j) => (
                           <div
-                            className="flex items-start gap-4 relative z-10"
+                            className="flex items-center gap-4 relative z-10"
                             key={j}
                           >
-                            <div className="w-2.5 h-2.5 mt-1.5 shrink-0 rounded-full bg-red-400" />
+                            <div className="w-2.5 h-2.5 shrink-0 rounded-full bg-red-400" />
                             <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
-                              <StreamingText text={gap} id={`gap_${activeDomain.domain}_${j}`} speed={50} />
+                              <StreamingText
+                                text={gap}
+                                id={`gap_${activeDomain.domain}_${j}`}
+                                speed={50}
+                              />
                             </p>
                           </div>
                         ))}
@@ -478,7 +480,7 @@ export default function ResultsPage() {
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 + (j * 0.04) }}
+                        transition={{ delay: 0.1 + j * 0.04 }}
                         key={j}
                         className="group relative bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-200 transition-all duration-300 overflow-hidden"
                       >
@@ -495,7 +497,11 @@ export default function ResultsPage() {
                               </span>
                             </div>
                             <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                              <StreamingText text={p} id={`${activeDomain.domain}_nist_${j}`} speed={100} />
+                              <StreamingText
+                                text={p}
+                                id={`${activeDomain.domain}_nist_${j}`}
+                                speed={100}
+                              />
                             </p>
                           </div>
                         </div>
@@ -508,9 +514,12 @@ export default function ResultsPage() {
                   <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
                     <FileText className="w-10 h-10 text-slate-300" />
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">No Controls Found</h3>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                    No Controls Found
+                  </h3>
                   <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md mx-auto">
-                    The semantic analysis engine did not map any NIST standards for the input chunks in this domain.
+                    The semantic analysis engine did not map any NIST standards
+                    for the input chunks in this domain.
                   </p>
                 </div>
               )}
