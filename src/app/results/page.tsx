@@ -1,10 +1,51 @@
 "use client";
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Loader2, BookOpen, Layers, CheckCircle2, ChevronRight, ShieldCheck, FileText } from 'lucide-react'
+import { ArrowLeft, Loader2, BookOpen, Layers, CheckCircle2, ChevronRight, ShieldCheck, FileText, AlertCircle } from 'lucide-react'
 import axios from 'axios'
+
+const StreamingText = ({ text, id, speed = 150 }: { text: string, id: string, speed?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [isComplete, setIsComplete] = useState(false);
+
+  useEffect(() => {
+    const fileId = localStorage.getItem("fileId") || "default";
+    const storageKey = `streamed_${fileId}_${id}`;
+
+    if (sessionStorage.getItem(storageKey) === 'true') {
+      setDisplayedText(text);
+      setIsComplete(true);
+      return;
+    }
+
+    setDisplayedText("");
+    setIsComplete(false);
+
+    const words = text.split(" ");
+    let i = 0;
+
+    const intervalId = setInterval(() => {
+      i++;
+      setDisplayedText(words.slice(0, i).join(" "));
+      if (i >= words.length) {
+        clearInterval(intervalId);
+        setIsComplete(true);
+        sessionStorage.setItem(storageKey, "true");
+      }
+    }, speed);
+
+    return () => clearInterval(intervalId);
+  }, [text, id, speed]);
+
+  return (
+    <span>
+      {displayedText}
+      {!isComplete && <span className="inline-block w-1.5 h-3 md:h-4 ml-1 bg-blue-500 animate-pulse align-middle" />}
+    </span>
+  );
+};
 
 interface DomainEntry {
   domain: string;
@@ -81,12 +122,12 @@ export default function ResultsPage() {
           if (statusRes.data.status === 'completed') {
             clearInterval(pollInterval)
             localStorage.setItem('analysisResult', JSON.stringify(statusRes.data.results))
-            setGenerating(false)
+            setAnalyzing(false)
             // router.push('/analysis')
           } else if (statusRes.data.status === 'failed') {
             clearInterval(pollInterval)
             console.error('Job failed:', statusRes.data)
-            setGenerating(false)
+            setAnalyzing(false)
           }
         } catch (e) {
           console.error("Polling error:", e);
@@ -223,8 +264,8 @@ export default function ResultsPage() {
           </button>
           <div className="w-px h-6 bg-slate-200" />
           <button
-            onClick={handleGenerate}
-            disabled={generating}
+            onClick={handleGeneratePolicy}
+            disabled={generatingPolicy}
             className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 disabled:opacity-50"
           >
             {generatingPolicy ? (
@@ -286,8 +327,8 @@ export default function ResultsPage() {
                   key={i}
                   onClick={() => setActiveDomainIdx(i)}
                   className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${isActive
-                      ? 'bg-blue-50/50 border-blue-200 shadow-sm'
-                      : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
+                    ? 'bg-blue-50/50 border-blue-200 shadow-sm'
+                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200'
                     }`}
                 >
                   {isActive && (
@@ -424,7 +465,7 @@ export default function ResultsPage() {
                           >
                             <div className="w-2.5 h-2.5 mt-1.5 shrink-0 rounded-full bg-red-400" />
                             <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
-                              {gap}
+                              <StreamingText text={gap} id={`gap_${activeDomain.domain}_${j}`} speed={50} />
                             </p>
                           </div>
                         ))}
