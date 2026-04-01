@@ -1,6 +1,6 @@
 import os
 import json
-import uuid
+import hashlib
 
 from constants import STORAGE_FOLDER
 
@@ -39,6 +39,12 @@ def load_result(file_id: str) -> object:
         return json.load(f)
 
 
-def generate_file_id() -> str:
-    """Generate a new unique file_id (UUID4)."""
-    return str(uuid.uuid4())
+def generate_file_id(file_bytes: bytes, domain: str | None = None) -> str:
+    """Generate a deterministic file_id from the MD5 hash of *file_bytes*.
+
+    If *domain* is provided it is appended so that the same file analysed
+    under different domains gets separate cache entries:
+        "<md5hex>_<domain>"
+    """
+    md5 = hashlib.md5(file_bytes).hexdigest()
+    return f"{md5}_{domain}" if domain else md5

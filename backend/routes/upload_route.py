@@ -16,7 +16,6 @@ upload_router = APIRouter()
 async def upload_pdf(
     file: UploadFile = File(...),
     domain: Optional[str] = Form(None),
-    file_id: Optional[str] = Form(None),
 ):
     """Upload and process a PDF file.
 
@@ -24,30 +23,30 @@ async def upload_pdf(
     immediately without reprocessing the PDF.
     """
 
-    # ── Cache hit: return stored result ──────────────────────────────────────
-    if file_id and result_exists(file_id):
-        cached = load_result(file_id)
-        return {"file_id": file_id, "cached": True, "result": cached}
-
-    # ── Generate a fresh file_id for this upload ─────────────────────────────
-    file_id = generate_file_id()
-
     # Validate file
     if not file or file.filename == "":
         raise HTTPException(status_code=400, detail="No file found")
-    
+
     if not (file.filename.lower().endswith(".pdf")):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     if not UPLOAD_FOLDER:
         raise HTTPException(status_code=500, detail="Upload folder not configured")
-    
+
+    # ── Read bytes once, derive deterministic file_id ────────────────────────
+    contents = await file.read()
+    file_id = generate_file_id(contents, domain)
+
+    # ── Cache hit: return stored result immediately ───────────────────────────
+    if result_exists(file_id):
+        cached = load_result(file_id)
+        return {"file_id": file_id, "cached": True, "result": cached}
+
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-    
+
     # Save uploaded file
-    contents = await file.read()
     with open(file_path, "wb") as f:
         f.write(contents)
 
