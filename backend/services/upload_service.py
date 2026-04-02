@@ -84,7 +84,7 @@ def get_domain_chunks_with_policies(domain_chunks: list[dict]) -> list[dict]:
             for doc_id, doc in zip(ids, documents):
                 if doc_id not in seen_ids:
                     seen_ids.add(doc_id)
-                    unique_policies.append(doc)
+                    unique_policies.append({"id": doc_id, "content": doc})
 
         item["related_nist_policies"] = unique_policies
 

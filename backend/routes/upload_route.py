@@ -7,12 +7,39 @@ from typing import Optional
 from helpers.pdf_helper import extract_text_from_pdf
 from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
-from constants import UPLOAD_FOLDER
+from constants import UPLOAD_FOLDER, CHUNKS_PER_BATCH
 from services.upload_service import classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
 from services.storage_service import generate_file_id, result_exists, load_result, save_result
 
 upload_router = APIRouter()
 logger = get_logger(__name__)
+
+def batch_chunks(chunks: list, batch_size: int = CHUNKS_PER_BATCH) -> list:
+    """Split chunks into balanced batches."""
+    if not chunks:
+        return []
+    
+    num_chunks = len(chunks)
+    if num_chunks <= batch_size:
+        num_batches = 1
+    elif num_chunks <= (batch_size * 2) + 1:
+        num_batches = 2
+    elif num_chunks <= (batch_size * 3) + 2:
+        num_batches = 3
+    else:
+        num_batches = (num_chunks + batch_size - 1) // batch_size
+    
+    base_size = num_chunks // num_batches
+    remainder = num_chunks % num_batches
+    
+    batches = []
+    start = 0
+    for i in range(num_batches):
+        size = base_size + (1 if i >= num_batches - remainder else 0)
+        batches.append(chunks[start:start + size])
+        start += size
+    
+    return batches
 
 @upload_router.post("/upload-pdf")
 async def upload_pdf(
@@ -20,37 +47,41 @@ async def upload_pdf(
     domain: Optional[str] = Form(None),
 ):
     """Upload and process a PDF file.
-
-    If *file_id* is supplied and a cached result exists it is returned
-    immediately without reprocessing the PDF.
+    
+    If domain is provided, chunks are batched in groups of 3-4.
+    Response includes NIST policy IDs for frontend filtering.
     """
 
     # Validate file
     if not file or file.filename == "":
-        logger.warning("Upload request rejected because no file was provided")
+        logger.warning("Upload request rejected - no file provided")
         raise HTTPException(status_code=400, detail="No file found")
 
-    if not (file.filename.lower().endswith(".pdf")):
-        logger.warning("Upload request rejected because file was not a PDF: %s", file.filename)
+    if not file.filename.lower().endswith(".pdf"):
+        logger.warning("Upload request rejected - not a PDF: %s", file.filename)
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     if not UPLOAD_FOLDER:
-        logger.error("Upload folder is not configured")
+        logger.error("Upload folder not configured")
         raise HTTPException(status_code=500, detail="Upload folder not configured")
 
-    # ── Read bytes once, derive deterministic file_id ────────────────────────
-    contents = await file.read()
+    # Read file and generate ID
+    try:
+        contents = await file.read()
+    except Exception as e:
+        logger.exception("Failed to read uploaded file")
+        raise HTTPException(status_code=500, detail="Failed to read file")
+
     file_id = generate_file_id(contents, domain)
-    logger.info("Processing upload for file=%s domain=%s file_id=%s", file.filename, domain or "auto", file_id)
+    logger.info("Processing file_id=%s domain=%s", file_id, domain or "auto")
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
     file_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
-    # Save uploaded file
     with open(file_path, "wb") as f:
         f.write(contents)
 
+    # Extract PDF text
     try:
         text = extract_text_from_pdf(file_path)
     except ValueError as e:
@@ -60,59 +91,47 @@ async def upload_pdf(
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
         )
 
-    # ── Cache hit: return stored result immediately ───────────────────────────
+    # Return cached result if available
     if result_exists(file_id):
         cached = load_result(file_id)
         logger.info("Cache hit for file_id=%s", file_id)
         return {"file_id": file_id, "cached": True, "result": cached, "extracted_text": text}
-    
-    if not domain:
-        # Chunk text for further processing
-        try:
-            input_chunks = sentence_based_chunking(text)
-            logger.info("Created %s chunks for file_id=%s", len(input_chunks), file_id)
-        except Exception as e:
-            logger.exception("Chunking failed for file_id=%s", file_id)
-            raise HTTPException(
-                status_code=500,
-                detail=json.dumps({"message": "Chunking failed", "error": str(e)})
-            )
-            
-        classes = []
-        try: 
-            for chunk in input_chunks:
-                classes.append(classify_pdf_chunk(chunk))
-        except Exception as e:
-            logger.exception("Classification failed for file_id=%s", file_id)
-            raise HTTPException(
-                status_code=500,
-                detail=json.dumps({"message": "Classification failed", "error": str(e)})
-            )
-            
-        try:
-            domain_wise_chunks = restructure_chunks_by_domain(classes)
-        except Exception as e:
-            logger.exception("Restructuring failed for file_id=%s", file_id)
-            raise HTTPException(
-                status_code=500,
-                detail=json.dumps({"message": "Restructuring failed", "error": str(e)})
-            )
-    else:
-        try:
-          input_chunks = sentence_based_chunking(text)
-          logger.info("Created %s chunks for file_id=%s using provided domain", len(input_chunks), file_id)
-        except Exception as e:
-          logger.exception("Chunking failed for file_id=%s", file_id)
-          raise HTTPException(
+
+    # Chunk text (single operation for both paths)
+    try:
+        input_chunks = sentence_based_chunking(text)
+        logger.info("Created %d chunks for file_id=%s", len(input_chunks), file_id)
+    except Exception as e:
+        logger.exception("Chunking failed for file_id=%s", file_id)
+        raise HTTPException(
             status_code=500,
             detail=json.dumps({"message": "Chunking failed", "error": str(e)})
-         )
+        )
 
-        domain_wise_chunks = [{
-         "domain": domain,
-         "text": input_chunks
-        }]
-        
+    # Process chunks based on domain specification
+    try:
+        if domain:
+            # Manual domain: batch chunks into groups of 3-4
+            batches = batch_chunks(input_chunks)
+            domain_wise_chunks = [
+                {"domain": domain, "text": batch}
+                for batch in batches
+            ]
+            logger.info("Created %d batches for manual domain=%s", len(batches), domain)
+        else:
+            # Auto mode: classify each chunk and restructure by domain
+            classes = [classify_pdf_chunk(chunk) for chunk in input_chunks]
+            domain_wise_chunks = restructure_chunks_by_domain(classes)
+            logger.info("Auto-classified into %d domains", len(domain_wise_chunks))
+
+    except Exception as e:
+        logger.exception("Classification/batching failed for file_id=%s", file_id)
+        raise HTTPException(
+            status_code=500,
+            detail=json.dumps({"message": "Classification failed", "error": str(e)})
+        )
+
+    # Retrieve policies for domains and include NIST policy IDs
     try:
         domain_chunks_policies = get_domain_chunks_with_policies(domain_wise_chunks)
     except Exception as e:
@@ -122,8 +141,13 @@ async def upload_pdf(
             detail=json.dumps({"message": "Policy retrieval failed", "error": str(e)})
         )
 
-    # ── Persist result and return with file_id ────────────────────────────────
+    # Persist and return result
     save_result(file_id, domain_chunks_policies)
-    logger.info("Upload processing completed for file_id=%s", file_id)
+    logger.info("Upload completed for file_id=%s", file_id)
 
-    return {"file_id": file_id, "cached": False, "result": domain_chunks_policies, "extracted_text": text}
+    return {
+        "file_id": file_id,
+        "cached": False,
+        "result": domain_chunks_policies,
+        "extracted_text": text
+    }
