@@ -27,9 +27,9 @@ export function ResultsDomainDetails({
   const [completedPolicyIds, setCompletedPolicyIds] = useState<string[]>([]);
   const [completedGapIds, setCompletedGapIds] = useState<string[]>([]);
 
-  const policyIds = domain.related_nist_policies.map(
-    (_, policyIndex) => `${domain.domain}_nist_${policyIndex}`,
-  );
+  const policyEntries = domain.related_nist_policies;
+
+  const policyIds = policyEntries.map((policy) => policy.id);
   const activePolicyStreamIndex = policyIds.findIndex(
     (policyId) => !completedPolicyIds.includes(policyId),
   );
@@ -187,8 +187,8 @@ export function ResultsDomainDetails({
               </div>
 
               <div className="grid grid-cols-1 gap-5">
-                {domain.related_nist_policies.map((policyText, policyIndex) => {
-                  const policyId = `${domain.domain}_nist_${policyIndex}`;
+                {policyEntries.map((policy, policyIndex) => {
+                  const policyId = policy.id;
                   const isAlreadyCompleted =
                     completedPolicyIds.includes(policyId);
                   const isActiveNow =
@@ -220,7 +220,7 @@ export function ResultsDomainDetails({
                           </div>
                           <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
                             <StreamingText
-                              text={policyText}
+                              text={policy.content}
                               id={policyId}
                               speed={100}
                               start={isAlreadyCompleted || isActiveNow}

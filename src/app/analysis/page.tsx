@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import axios from "axios";
 import { AppTopBar } from "@/components/layout/AppTopBar";
-import { ResultsSidebar } from "@/components/features/results/ResultsSidebar";
-import { ResultsDomainDetails } from "@/components/features/results/ResultsDomainDetails";
+import { ResultsSidebar } from "@/components/features/analysis/ResultsSidebar";
+import { ResultsDomainDetails } from "@/components/features/analysis/ResultsDomainDetails";
 import { downloadTextAsPdf } from "@/lib/pdf";
 import {
   DomainEntry,
   GapAnalysisCache,
   GapResult,
-} from "@/components/features/results/types";
+} from "@/components/features/analysis/types";
 
 const GAP_CACHE_PREFIX = "gapAnalysis:";
 
@@ -312,7 +312,9 @@ export default function ResultsPage() {
       .map((result, index) => {
         const gapsText =
           result.gaps && result.gaps.length > 0
-            ? result.gaps.map((gap, gapIndex) => `${gapIndex + 1}. ${gap}`).join("\n")
+            ? result.gaps
+                .map((gap, gapIndex) => `${gapIndex + 1}. ${gap}`)
+                .join("\n")
             : "No gaps available";
 
         return `${index + 1}. Domain: ${result.domain}\n\n${gapsText}`;

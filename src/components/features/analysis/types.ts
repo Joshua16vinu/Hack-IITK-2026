@@ -1,7 +1,12 @@
 export interface DomainEntry {
   domain: string
   text: string | string[]
-  related_nist_policies: string[]
+  related_nist_policies: NistPolicyEntry[]
+}
+
+export interface NistPolicyEntry {
+  id: string
+  content: string
 }
 
 export interface GapResult {
