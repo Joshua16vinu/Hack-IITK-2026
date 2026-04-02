@@ -236,7 +236,7 @@ export default function ResultsPage() {
             stopPolling();
             updateAnalyzing(false);
           }
-        }, 5000);
+        }, 15000);
       } catch (error) {
         console.error(error);
         updateAnalyzing(false);

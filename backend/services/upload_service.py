@@ -2,12 +2,40 @@ import json
 from pathlib import Path
 from collections import defaultdict
 
-from constants import DOMAIN_DATA_PATH, KB_COLLECTION, NIST_COLLECTION, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, DOMAIN_GAP_THRESHOLD
+from constants import DOMAIN_DATA_PATH, KB_COLLECTION, NIST_COLLECTION, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, DOMAIN_GAP_THRESHOLD, CHUNKS_PER_BATCH
 from helpers.chroma_helper import get_chroma_client
 from helpers.embedding_helper import load_embedding_model
 
 embedder = load_embedding_model()
 
+
+# -------------------------------- Batching chunks if domain is specified --------------------------------
+def batch_chunks(chunks: list, batch_size: int = CHUNKS_PER_BATCH) -> list:
+    """Split chunks into balanced batches."""
+    if not chunks:
+        return []
+    
+    num_chunks = len(chunks)
+    if num_chunks <= batch_size:
+        num_batches = 1
+    elif num_chunks <= (batch_size * 2) + 1:
+        num_batches = 2
+    elif num_chunks <= (batch_size * 3) + 2:
+        num_batches = 3
+    else:
+        num_batches = (num_chunks + batch_size - 1) // batch_size
+    
+    base_size = num_chunks // num_batches
+    remainder = num_chunks % num_batches
+    
+    batches = []
+    start = 0
+    for i in range(num_batches):
+        size = base_size + (1 if i >= num_batches - remainder else 0)
+        batches.append(chunks[start:start + size])
+        start += size
+    
+    return batches
 
 # -------------------------------- Domain classification logic --------------------------------
 with open(Path(DOMAIN_DATA_PATH), "r") as f:

@@ -115,8 +115,7 @@ export function ResultsDomainDetails({
             </div>
           </div>
 
-          {activeGapData?.status === "completed" &&
-            activeGapData.gaps &&
+          {activeGapData?.gaps &&
             activeGapData.gaps.length > 0 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between px-2">
@@ -136,6 +135,12 @@ export function ResultsDomainDetails({
                     transition={{ delay: 0.1 }}
                     className="group relative bg-white rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-md transition-all duration-300"
                   >
+                    {activeGapData.status === "processing" && (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-4">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Policy is still being analyzed...
+                      </div>
+                    )}
                     {activeGapData.gaps.map((gap, gapIndex) => {
                       const gapId = `gap_${domain.domain}_${gapIndex}`;
 

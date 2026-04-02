@@ -108,11 +108,23 @@ export function ResultsSidebar({
                 </span>
                 <span className="text-slate-300">•</span>
                 <span className={isActive ? color : "text-slate-500"}>
-                  {!domainGapData || domainGapData.status === "processing" ? (
+                  {!domainGapData ? (
                     <span className="flex items-center gap-1 text-slate-500">
                       <Loader2 className="w-3 h-3 animate-spin" /> Analyzing
                       gaps
                     </span>
+                  ) : domainGapData.status === "processing" ? (
+                    gapCount > 0 ? (
+                      <span className="flex items-center gap-1 text-slate-500">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        {gapCount} gaps (updating)
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-slate-500">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Analyzing
+                        gaps
+                      </span>
+                    )
                   ) : domainGapData.status === "completed" ? (
                     <span className={isActive ? color : "text-slate-500"}>
                       {gapCount} gaps

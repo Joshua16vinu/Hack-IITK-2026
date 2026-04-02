@@ -8,38 +8,11 @@ from helpers.pdf_helper import extract_text_from_pdf
 from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
 from constants import UPLOAD_FOLDER, CHUNKS_PER_BATCH
-from services.upload_service import classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
+from services.upload_service import batch_chunks, classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
 from services.storage_service import generate_file_id, result_exists, load_result, save_result
 
 upload_router = APIRouter()
 logger = get_logger(__name__)
-
-def batch_chunks(chunks: list, batch_size: int = CHUNKS_PER_BATCH) -> list:
-    """Split chunks into balanced batches."""
-    if not chunks:
-        return []
-    
-    num_chunks = len(chunks)
-    if num_chunks <= batch_size:
-        num_batches = 1
-    elif num_chunks <= (batch_size * 2) + 1:
-        num_batches = 2
-    elif num_chunks <= (batch_size * 3) + 2:
-        num_batches = 3
-    else:
-        num_batches = (num_chunks + batch_size - 1) // batch_size
-    
-    base_size = num_chunks // num_batches
-    remainder = num_chunks % num_batches
-    
-    batches = []
-    start = 0
-    for i in range(num_batches):
-        size = base_size + (1 if i >= num_batches - remainder else 0)
-        batches.append(chunks[start:start + size])
-        start += size
-    
-    return batches
 
 @upload_router.post("/upload-pdf")
 async def upload_pdf(
@@ -111,7 +84,7 @@ async def upload_pdf(
     # Process chunks based on domain specification
     try:
         if domain:
-            # Manual domain: batch chunks into groups of 3-4
+            # Manual domain: batch chunks into groups
             batches = batch_chunks(input_chunks)
             domain_wise_chunks = [
                 {"domain": domain, "text": batch}

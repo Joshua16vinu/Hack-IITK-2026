@@ -11,7 +11,7 @@ IMPORTANT:
 - Do not reference or name any NIST controls
 - Do not output JSON instead just give a array of gaps no other text content
 - Output only a clear, concise array of gaps
-- Each gap must be 1–2 sentences, totally no more than 5 gaps
+- Each gap must be 1-2 sentences, strictly 3-5 gaps
 - Avoid vague statements; each gap must describe a specific missing capability, process, or requirement
 - Use formal, professional language
 
