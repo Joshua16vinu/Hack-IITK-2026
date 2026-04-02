@@ -388,7 +388,11 @@ export default function ResultsPage() {
         hasProcessing: result.status === "processing",
         hasCompleted: result.status === "completed",
         hasFailed: result.status === "failed",
-        gaps: new Set((result.gaps ?? []).filter(Boolean)),
+        gaps: new Set(
+          Array.isArray(result.gaps)
+            ? result.gaps.filter(Boolean)
+            : []
+        ),
       });
     }
 
