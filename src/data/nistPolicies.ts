@@ -58,4 +58,3 @@ export const nistDomainsData = [
     ]
   }
 ]
-//just testing push cmd

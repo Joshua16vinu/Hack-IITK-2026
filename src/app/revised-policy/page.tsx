@@ -1,8 +1,25 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2, ArrowLeft, FileText, CheckCircle2, ShieldCheck, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Loader2,
+  ArrowLeft,
+  ChevronRight,
+  FileText,
+  ShieldCheck,
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
+import { AppTopBar } from "@/components/layout/AppTopBar";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
+
+interface GapCacheResult {
+  domain: string;
+  gaps?: string[];
+}
 
 export default function RevisedPolicyPage() {
   const router = useRouter();
@@ -28,16 +45,16 @@ export default function RevisedPolicyPage() {
     const fileId = localStorage.getItem("fileId");
     const gapCacheKey = `gapAnalysis:${fileId}`;
     const text = localStorage.getItem("extractedText");
-    console.log(text);
-    const gapsRaw = localStorage.getItem(gapCacheKey)
-    console.log(gapsRaw);
+    const gapsRaw = localStorage.getItem(gapCacheKey);
 
     const cachedPolicy = localStorage.getItem(`revisedPolicy:${fileId}`);
     if (cachedPolicy) {
       setStreamedText(cachedPolicy);
     }
     if (!text || !gapsRaw) {
-      setErrorText("Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.");
+      setErrorText(
+        "Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.",
+      );
       return;
     }
 
@@ -45,9 +62,13 @@ export default function RevisedPolicyPage() {
 
     try {
       const parsedGaps = JSON.parse(gapsRaw);
-      let results = [];
+      let results: GapCacheResult[] = [];
 
-      if (parsedGaps && parsedGaps.results && Array.isArray(parsedGaps.results)) {
+      if (
+        parsedGaps &&
+        parsedGaps.results &&
+        Array.isArray(parsedGaps.results)
+      ) {
         results = parsedGaps.results;
       } else if (Array.isArray(parsedGaps)) {
         results = parsedGaps;
@@ -55,22 +76,27 @@ export default function RevisedPolicyPage() {
         throw new Error("Invalid gap analysis format");
       }
 
-      const combined = results.map((result: any) => {
-        const domainStr = `Domain: ${result.domain}`;
-        const gapsStr = (result.gaps || []).map((g: string) => `* ${g}`).join('\n');
-        return `${domainStr}\n${gapsStr}`;
-      }).join('\n\n');
+      const combined = results
+        .map((result) => {
+          const domainStr = `Domain: ${result.domain}`;
+          const gapsStr = (result.gaps || [])
+            .map((g: string) => `* ${g}`)
+            .join("\n");
+          return `${domainStr}\n${gapsStr}`;
+        })
+        .join("\n\n");
 
       setCombinedGaps(combined);
-      console.log(combined)
       setHasData(true);
     } catch (err) {
       console.error("Error parsing gap analysis:", err);
-      setErrorText("Failed to parse gap analysis data from localStorage. The format might be invalid.");
+      setErrorText(
+        "Failed to parse gap analysis data from localStorage. The format might be invalid.",
+      );
     }
   }, []);
 
-  const handleGeneratePolicy = async () => {
+  const handleGeneratePolicy = useCallback(async () => {
     if (!hasData) return;
 
     setLoading(true);
@@ -94,7 +120,9 @@ export default function RevisedPolicyPage() {
       }
 
       if (!response.body) {
-        throw new Error("ReadableStream not supported by browser or empty response");
+        throw new Error(
+          "ReadableStream not supported by browser or empty response",
+        );
       }
 
       const reader = response.body.getReader();
@@ -116,13 +144,17 @@ export default function RevisedPolicyPage() {
       if (fileId) {
         localStorage.setItem(`revisedPolicy:${fileId}`, fullText);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Streaming error:", err);
-      setErrorText(err.message || "An error occurred while generating the revised policy.");
+      setErrorText(
+        err instanceof Error
+          ? err.message
+          : "An error occurred while generating the revised policy.",
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [combinedGaps, extractedText, hasData]);
 
   useEffect(() => {
     if (hasData && !autoStartRef.current) {
@@ -133,85 +165,82 @@ export default function RevisedPolicyPage() {
         handleGeneratePolicy();
       }
     }
-  }, [hasData]);
+  }, [handleGeneratePolicy, hasData]);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
-      <header className="shrink-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-50 px-6 flex items-center justify-between sticky top-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-md shadow-blue-500/20">
-            <CheckCircle2 className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-extrabold text-slate-900 tracking-tight text-lg">
-            Policy<span className="text-blue-600">Guard</span>
-          </span>
-          <span className="text-slate-300 mx-2">/</span>
-          <span className="text-slate-500 font-semibold text-sm">
-            Revised Policy Editor
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/results")}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Analysis
-          </button>
-          <div className="w-px h-6 bg-slate-200 hidden sm:block" />
-          <button
-            onClick={() => router.push("/roadmap")}
-            disabled={!streamedText || loading}
-            className={`flex items-center gap-2 text-sm font-bold transition-colors px-3 py-2 rounded-lg ${
-              !streamedText || loading
-                ? "text-slate-400 cursor-not-allowed"
-                : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            }`}
-          >
-            Go to Roadmap <ArrowLeft className="w-4 h-4 rotate-180" />
-          </button>
-        </div>
-      </header>
+      <AppTopBar
+        section="Revised Policy"
+        actions={
+          <>
+            <button
+              onClick={() => router.push("/results")}
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Analysis
+            </button>
+            <div className="w-px h-6 bg-slate-200 hidden sm:block" />
+            <button
+              onClick={() => router.push("/roadmap")}
+              disabled={!streamedText || loading}
+              className={`flex items-center gap-2 px-6 py-2 text-white text-sm font-bold rounded-lg transition-all shadow-lg ${
+                !streamedText || loading
+                  ? "bg-gradient-to-r from-emerald-600 to-emerald-700 opacity-50 cursor-not-allowed shadow-emerald-600/25"
+                  : "bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 shadow-emerald-600/25 hover:shadow-emerald-600/40"
+              }`}
+            >
+              Go to Roadmap
+              <ChevronRight className="w-4 h-4 opacity-70" />
+            </button>
+          </>
+        }
+      />
 
-      <main className="flex-1 w-full max-w-5xl mx-auto p-6 md:p-12 flex flex-col">
+      <PageContainer>
         <div className="w-full text-center space-y-4 mb-8">
           <h1 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight leading-tight">
             Generate Revised Policy
           </h1>
           <p className="text-slate-500 font-medium max-w-2xl mx-auto text-base leading-relaxed">
-            Our AI engine will restructure and rewrite your policy document to satisfy all identified NIST controls and close the existing domain gaps.
+            Our AI engine will restructure and rewrite your policy document to
+            satisfy all identified NIST controls and close the existing domain
+            gaps.
           </p>
         </div>
 
         {errorText && (
-          <div className="w-full bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-2xl mb-8 flex items-start gap-4 shadow-sm">
-            <AlertCircle className="w-6 h-6 text-red-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-bold mb-1">Error</h3>
-              <p className="text-sm font-medium opacity-90">{errorText}</p>
-            </div>
-            {!hasData && (
-              <button
-                onClick={() => router.push("/")}
-                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
-              >
-                Go to Upload
-              </button>
-            )}
-          </div>
+          <ErrorBanner
+            message={errorText}
+            action={
+              !hasData ? (
+                <button
+                  onClick={() => router.push("/")}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
+                >
+                  Go to Upload
+                </button>
+              ) : null
+            }
+          />
         )}
 
-        <div className="flex-1 w-full bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm flex flex-col min-h-[600px]">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-6 border-b border-slate-100 gap-4 shrink-0">
+        <GeneratorPanel
+          header={
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100">
                 <FileText className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Revised Output</h2>
-                <p className="text-sm text-slate-400 font-medium tracking-wide">AI-Generated Policy Stream</p>
+                <h2 className="text-xl font-bold text-slate-900">
+                  Revised Output
+                </h2>
+                <p className="text-sm text-slate-400 font-medium tracking-wide">
+                  AI-Generated Policy Stream
+                </p>
               </div>
             </div>
-
+          }
+          action={
             <button
               onClick={handleGeneratePolicy}
               disabled={loading || !hasData}
@@ -229,14 +258,19 @@ export default function RevisedPolicyPage() {
                 </>
               )}
             </button>
-          </div>
-
+          }
+        >
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-300 relative whitespace-pre-wrap">
             {!streamedText && !loading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
                 <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
-                <p className="font-semibold text-lg text-slate-400">Ready to draft your new policy.</p>
-                <p className="text-sm max-w-sm mt-2 font-medium">Click "Regenerate Policy" to begin streaming real-time AI revisions.</p>
+                <p className="font-semibold text-lg text-slate-400">
+                  Ready to draft your new policy.
+                </p>
+                <p className="text-sm max-w-sm mt-2 font-medium">
+                  Click &quot;Regenerate Policy&quot; to begin streaming
+                  real-time AI revisions.
+                </p>
               </div>
             )}
 
@@ -252,16 +286,26 @@ export default function RevisedPolicyPage() {
                   AI is conceptualizing...
                 </h3>
                 <p className="text-sm font-medium text-slate-500 max-w-xs leading-relaxed">
-                  Synthesizing domain controls and filling existing gaps to draft a comprehensive revised policy.
+                  Synthesizing domain controls and filling existing gaps to
+                  draft a comprehensive revised policy.
                 </p>
                 <div className="flex items-center gap-1.5 mt-6">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div
+                    className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 rounded-full bg-blue-500 animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </div>
               </div>
             )}
-            
+
             {streamedText}
 
             {loading && (
@@ -269,8 +313,8 @@ export default function RevisedPolicyPage() {
             )}
             <div ref={contentEndRef} />
           </div>
-        </div>
-      </main>
+        </GeneratorPanel>
+      </PageContainer>
     </div>
   );
 }

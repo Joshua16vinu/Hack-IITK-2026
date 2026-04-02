@@ -2,89 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft,
-  Loader2,
-  BookOpen,
-  Layers,
-  CheckCircle2,
-  ChevronRight,
-  ShieldCheck,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
 import axios from "axios";
-
-const StreamingText = ({
-  text,
-  id,
-  speed = 150,
-}: {
-  text: string;
-  id: string;
-  speed?: number;
-}) => {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-
-  useEffect(() => {
-    const fileId = localStorage.getItem("fileId") || "default";
-    const storageKey = `streamed_${fileId}_${id}`;
-
-    if (sessionStorage.getItem(storageKey) === "true") {
-      setDisplayedText(text);
-      setIsComplete(true);
-      return;
-    }
-
-    setDisplayedText("");
-    setIsComplete(false);
-
-    const words = text.split(" ");
-    let i = 0;
-
-    const intervalId = setInterval(() => {
-      i++;
-      setDisplayedText(words.slice(0, i).join(" "));
-      if (i >= words.length) {
-        clearInterval(intervalId);
-        setIsComplete(true);
-        sessionStorage.setItem(storageKey, "true");
-      }
-    }, speed);
-
-    return () => clearInterval(intervalId);
-  }, [text, id, speed]);
-
-  return (
-    <span>
-      {displayedText}
-      {!isComplete && (
-        <span className="inline-block w-1.5 h-3 md:h-4 ml-1 bg-blue-500 animate-pulse align-middle" />
-      )}
-    </span>
-  );
-};
-
-interface DomainEntry {
-  domain: string;
-  text: string | string[];
-  related_nist_policies: string[];
-}
-
-interface GapResult {
-  domain: string;
-  status: "processing" | "completed" | "failed";
-  gaps?: string[];
-}
-
-interface GapAnalysisCache {
-  status: GapResult["status"];
-  results: GapResult[];
-  message?: string;
-  updatedAt: number;
-}
+import { AppTopBar } from "@/components/layout/AppTopBar";
+import { ResultsSidebar } from "@/components/features/results/ResultsSidebar";
+import { ResultsDomainDetails } from "@/components/features/results/ResultsDomainDetails";
+import {
+  DomainEntry,
+  GapAnalysisCache,
+  GapResult,
+} from "@/components/features/results/types";
 
 const GAP_CACHE_PREFIX = "gapAnalysis:";
 
@@ -104,9 +31,7 @@ const readGapAnalysisCache = (fileId: string): GapAnalysisCache | null => {
       parsed?.status === "failed" ||
       parsed?.status === "processing"
         ? parsed.status
-        : results.length > 0
-          ? "processing"
-          : "processing";
+        : "processing";
 
     return {
       status,
@@ -158,6 +83,7 @@ export default function ResultsPage() {
   const [gapResults, setGapResults] = useState<GapResult[]>([]);
   const [hasRevisedPolicy, setHasRevisedPolicy] = useState(false);
   const [analyzing, setAnalyzing] = useState(true);
+
   const startedRef = useRef(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gapResultsRef = useRef<GapResult[]>([]);
@@ -225,6 +151,7 @@ export default function ResultsPage() {
           : Array.isArray(startRes.data?.results)
             ? startRes.data.results
             : [];
+
         const currentStatus: GapResult["status"] =
           startRes.data?.status === "completed" ||
           startRes.data?.status === "failed"
@@ -245,6 +172,7 @@ export default function ResultsPage() {
               updateAnalyzing(cached.status === "processing");
             });
           }
+
           writeGapAnalysisCache(fileId, {
             status: currentStatus,
             message: startRes.data?.message,
@@ -271,9 +199,11 @@ export default function ResultsPage() {
             const statusRes = await axios.get(
               "http://127.0.0.1:5000/api/analyze-gaps",
             );
+
             const polledResults = Array.isArray(statusRes.data?.results)
               ? statusRes.data.results
               : undefined;
+
             const polledStatus: GapResult["status"] =
               statusRes.data?.status === "completed" ||
               statusRes.data?.status === "failed"
@@ -294,22 +224,18 @@ export default function ResultsPage() {
               updateAnalyzing(polledStatus === "processing");
             }
 
-            if (polledStatus === "completed") {
+            if (polledStatus === "completed" || polledStatus === "failed") {
               stopPolling();
-              updateAnalyzing(false);
-            } else if (polledStatus === "failed") {
-              stopPolling();
-              console.error("Job failed:", statusRes.data);
               updateAnalyzing(false);
             }
-          } catch (e) {
-            console.error("Polling error:", e);
+          } catch (error) {
+            console.error("Polling error:", error);
             stopPolling();
             updateAnalyzing(false);
           }
         }, 5000);
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error(error);
         updateAnalyzing(false);
       }
     },
@@ -318,46 +244,47 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (!isHydrated || startedRef.current) return;
+
     if (!domains.length) {
       router.replace("/");
       return;
     }
 
-    try {
-      startedRef.current = true;
+    startedRef.current = true;
+    const fileId = localStorage.getItem("fileId");
 
-      const fileId = localStorage.getItem("fileId");
-      if (!fileId) {
-        router.replace("/");
+    if (!fileId) {
+      router.replace("/");
+      return;
+    }
+
+    const cached = readGapAnalysisCache(fileId);
+    if (cached) {
+      queueMicrotask(() => {
+        updateGapResults(cached.results);
+        updateAnalyzing(cached.status === "processing");
+      });
+
+      if (cached.status === "completed" || cached.status === "failed") {
         return;
       }
-
-      const cached = readGapAnalysisCache(fileId);
-      if (cached) {
-        queueMicrotask(() => {
-          updateGapResults(cached.results);
-          updateAnalyzing(cached.status === "processing");
-        });
-
-        if (cached.status === "completed" || cached.status === "failed") {
-          return;
-        }
-      }
-
-      queueMicrotask(() => {
-        void startGapAnalysis(domains, fileId);
-      });
-    } catch {
-      router.replace("/");
     }
+
+    queueMicrotask(() => {
+      void startGapAnalysis(domains, fileId);
+    });
+
     return () => {
       stopPolling();
     };
-  }, [isHydrated, router, domains, startGapAnalysis, updateAnalyzing, updateGapResults]);
-
-  const handleGeneratePolicy = () => {
-    router.push("/revised-policy");
-  };
+  }, [
+    isHydrated,
+    router,
+    domains,
+    startGapAnalysis,
+    updateAnalyzing,
+    updateGapResults,
+  ]);
 
   if (!isHydrated || !domains.length) {
     return (
@@ -369,320 +296,66 @@ export default function ResultsPage() {
 
   const activeDomain = domains[activeDomainIdx];
   const activeNist = activeDomain.related_nist_policies?.length || 0;
-
-  const getDomainGapData = (domainName: string) =>
-    gapResults.find((g) => g.domain === domainName);
-  const activeGapData = getDomainGapData(activeDomain.domain);
-  const activeGapsCount = activeGapData?.gaps?.length || 0;
-
   const totalNist = domains.reduce(
-    (a, d) => a + (d.related_nist_policies?.length || 0),
+    (count, domain) => count + (domain.related_nist_policies?.length || 0),
     0,
   );
 
+  const getDomainGapData = (domainName: string) =>
+    gapResults.find((gapItem) => gapItem.domain === domainName);
+
+  const activeGapData = getDomainGapData(activeDomain.domain);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* HEADER */}
-      <header className="shrink-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-50 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-md shadow-blue-500/20">
-            <CheckCircle2 className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-extrabold text-slate-900 tracking-tight text-lg">
-            Policy<span className="text-blue-600">Guard</span>
-          </span>
-          <span className="text-slate-300 mx-2">/</span>
-          <span className="text-slate-500 font-semibold text-sm">
-            Analysis Results
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
-          >
-            <ArrowLeft className="w-4 h-4" /> New Upload
-          </button>
-          <div className="w-px h-6 bg-slate-200" />
-          <button
-            onClick={handleGeneratePolicy}
-            disabled={analyzing}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {"Generate Revised Policy"}
-          </button>
-          <button
-            onClick={() => router.push("/roadmap")}
-            disabled={!hasRevisedPolicy}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {"Go to Roadmap"}
-            <ChevronRight className="w-4 h-4 opacity-70" />
-          </button>
-        </div>
-      </header>
-
-      {/* MAIN LAYOUT */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT SIDEBAR - DOMAINS & STATS */}
-        <div className="w-80 shrink-0 bg-white border-r border-slate-200 flex flex-col z-40 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <div className="mb-6">
-              <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> Global Summary
-              </h2>
-              <p className="text-3xl font-black text-slate-900 tracking-tight">
-                {domains.length} Domains
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-50 to-blue-50/20 border border-blue-100/50 rounded-xl p-3 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)]">
-              <div className="flex items-center gap-1.5 mb-1.5 text-blue-500">
-                <BookOpen className="w-3.5 h-3.5" />
-                <p className="text-[10px] font-bold uppercase tracking-widest leading-none">
-                  Total NIST Controls
-                </p>
-              </div>
-              <p className="text-xl font-extrabold text-blue-700 leading-none">
-                {totalNist}
-              </p>
-            </div>
-          </div>
-
-          <div className="p-4 px-6 pt-5">
-            <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5" /> Detected Categories
-            </h2>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 scrollbar-thin scrollbar-thumb-slate-200">
-            {domains.map((d, i) => {
-              const isActive = i === activeDomainIdx;
-              const nistCount = d.related_nist_policies?.length || 0;
-              const dGapData = getDomainGapData(d.domain);
-              const gapCount = dGapData?.gaps?.length || 0;
-
-              return (
-                <button
-                  key={i}
-                  onClick={() => setActiveDomainIdx(i)}
-                  className={`w-full text-left p-4 rounded-2xl transition-all border relative overflow-hidden group ${
-                    isActive
-                      ? "bg-blue-50/50 border-blue-200 shadow-sm"
-                      : "bg-white border-transparent hover:bg-slate-50 hover:border-slate-200"
-                  }`}
-                >
-                  {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
-                  )}
-                  <div className="flex items-center gap-2 mb-2">
-                    <Layers
-                      className={`w-4 h-4 ${isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600 transition-colors"}`}
-                    />
-                    <h3
-                      className={`font-bold text-sm line-clamp-1 ${isActive ? "text-blue-900" : "text-slate-700"}`}
-                    >
-                      {d.domain}
-                    </h3>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-semibold">
-                    <span
-                      className={isActive ? "text-blue-600" : "text-slate-500"}
-                    >
-                      {nistCount} controls
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <span
-                      className={isActive ? "text-blue-600" : "text-slate-500"}
-                    >
-                      {!dGapData || dGapData.status === "processing" ? (
-                        <span className="flex items-center gap-1 text-slate-500">
-                          <Loader2 className="w-3 h-3 animate-spin" /> Analyzing
-                          gaps
-                        </span>
-                      ) : dGapData.status === "completed" ? (
-                        <span
-                          className={
-                            isActive ? "text-red-600" : "text-slate-500"
-                          }
-                        >
-                          {gapCount} gaps
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">Failed</span>
-                      )}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* RIGHT CONTENT - DOMAIN DETAILS */}
-        <div className="flex-1 relative overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 bg-[#f8f9fc] p-8 lg:p-12">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeDomainIdx}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.2 }}
-              className="max-w-4xl mx-auto space-y-8 pb-32"
+      <AppTopBar
+        section="Analysis Results"
+        actions={
+          <>
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
             >
-              {/* Domain Header Info */}
-              <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-200 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-blue-100/50 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+              <ArrowLeft className="w-4 h-4" /> New Upload
+            </button>
 
-                <div className="flex flex-col sm:flex-row items-start justify-between relative z-10 gap-8">
-                  <div className="space-y-4 flex-1">
-                    <h1 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-600 tracking-tight leading-tight">
-                      {activeDomain.domain}
-                    </h1>
-                    <p className="text-slate-500 font-medium max-w-xl text-base leading-relaxed">
-                      This domain encapsulates policies related to{" "}
-                      <strong className="text-slate-700">
-                        {activeDomain.domain}
-                      </strong>
-                      . Review the associated standards mapped below.
-                    </p>
-                  </div>
+            <div className="w-px h-6 bg-slate-200" />
 
-                  <div className="hidden sm:flex items-center gap-4 bg-[#f8f9fc] rounded-3xl p-5 border border-slate-100 shadow-inner shrink-0">
-                    <div className="text-center px-4">
-                      <p className="text-4xl font-black text-blue-600">
-                        {activeNist}
-                      </p>
-                      <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mt-1">
-                        NIST Controls
-                      </p>
-                    </div>
-                    <div className="w-px h-16 bg-slate-200" />
-                    <div className="text-center px-4">
-                      {!activeGapData ||
-                      activeGapData.status === "processing" ? (
-                        <Loader2 className="w-8 h-8 mx-auto animate-spin text-red-500 mb-2" />
-                      ) : (
-                        <p className="text-4xl font-black text-red-500">
-                          {activeGapsCount}
-                        </p>
-                      )}
-                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mt-1">
-                        Identified Gaps
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <button
+              onClick={() => router.push("/revised-policy")}
+              disabled={analyzing}
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Generate Revised Policy
+            </button>
 
-              {/* Domain Gaps Map */}
-              {activeGapData?.status === "completed" &&
-                activeGapData.gaps &&
-                activeGapData.gaps.length > 0 && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between px-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                          <AlertCircle className="w-4 h-4 text-red-600" />
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                          Identified Gaps
-                        </h2>
-                      </div>
-                    </div>
+            <button
+              onClick={() => router.push("/roadmap")}
+              disabled={!hasRevisedPolicy}
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Go to Roadmap
+              <ChevronRight className="w-4 h-4 opacity-70" />
+            </button>
+          </>
+        }
+      />
 
-                    <div className="grid grid-cols-1 gap-4">
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="group relative bg-white rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-md transition-all duration-300"
-                      >
-                        {activeGapData.gaps.map((gap, j) => (
-                          <div
-                            className="flex items-start gap-4 relative z-10"
-                            key={j}
-                          >
-                            <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
-                            <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
-                              <StreamingText
-                                text={gap}
-                                id={`gap_${activeDomain.domain}_${j}`}
-                                speed={50}
-                              />
-                            </p>
-                          </div>
-                        ))}
-                      </motion.div>
-                    </div>
-                  </div>
-                )}
+      <div className="flex flex-1 overflow-hidden">
+        <ResultsSidebar
+          domains={domains}
+          activeDomainIdx={activeDomainIdx}
+          onSelectDomain={setActiveDomainIdx}
+          totalNist={totalNist}
+          getDomainGapData={getDomainGapData}
+        />
 
-              {/* NIST Policies Map */}
-              {activeNist > 0 ? (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <ShieldCheck className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                        Relevant NIST Controls
-                      </h2>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5">
-                    {activeDomain.related_nist_policies.map((p, j) => (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 + j * 0.04 }}
-                        key={j}
-                        className="group relative bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-200 transition-all duration-300 overflow-hidden"
-                      >
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                        <div className="flex items-start gap-5 relative z-10">
-                          <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#f8f9fc] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors duration-300">
-                            <BookOpen className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div className="flex items-center gap-2">
-                              <span className="px-3 py-1 bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 text-slate-500 text-[10px] font-black tracking-widest uppercase rounded-lg transition-colors">
-                                CONTROL {String(j + 1).padStart(2, "0")}
-                              </span>
-                            </div>
-                            <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                              <StreamingText
-                                text={p}
-                                id={`${activeDomain.domain}_nist_${j}`}
-                                speed={100}
-                              />
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-3xl p-16 text-center border-2 border-slate-200 border-dashed">
-                  <div className="w-20 h-20 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <FileText className="w-10 h-10 text-slate-300" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-3">
-                    No Controls Found
-                  </h3>
-                  <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-md mx-auto">
-                    The semantic analysis engine did not map any NIST standards
-                    for the input chunks in this domain.
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
+        <ResultsDomainDetails
+          domain={activeDomain}
+          activeDomainIdx={activeDomainIdx}
+          activeNist={activeNist}
+          activeGapData={activeGapData}
+        />
       </div>
     </div>
   );

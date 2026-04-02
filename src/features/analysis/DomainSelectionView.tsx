@@ -1,14 +1,8 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Shield,
-  Database,
-  Activity,
-  Lock,
-  FileKey,
-  ShieldAlert,
   ChevronRight,
   Layers,
   FileText,
@@ -19,78 +13,56 @@ import {
   ChevronDown,
   ChevronUp,
   CheckCircle2,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { getMeta } from "@/data/domainStyles";
+import { LucideIcon } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Domain {
-  domain: string
-  text: string | string[]
-  related_nist_policies: string[]
+  domain: string;
+  text: string | string[];
+  related_nist_policies: string[];
 }
 
 interface DomainSelectionProps {
-  domains: Domain[]
-  onSelect: (domain: Domain) => void  // kept for compatibility
-  onSelectAll?: (domains: Domain[]) => void
-  onBack?: () => void
+  domains: Domain[];
+  onSelect: (domain: Domain) => void; // kept for compatibility
+  onSelectAll?: (domains: Domain[]) => void;
+  onBack?: () => void;
 }
-
-// ─── Domain meta ─────────────────────────────────────────────────────────────
-
-const DOMAIN_META: Record<string, { color: string; bg: string; border: string; icon: any; badge: string }> = {
-  'ISMS': {
-    color: 'text-[#3B8FF3]', bg: 'bg-[#3B8FF3]/10', border: 'border-[#3B8FF3]/25',
-    icon: Shield, badge: 'ISMS'
-  },
-  'Risk Management': {
-    color: 'text-[#F29F67]', bg: 'bg-[#F29F67]/10', border: 'border-[#F29F67]/25',
-    icon: Activity, badge: 'RISK'
-  },
-  'Patch Management': {
-    color: 'text-[#E0B50F]', bg: 'bg-[#E0B50F]/10', border: 'border-[#E0B50F]/25',
-    icon: ShieldAlert, badge: 'PATCH'
-  },
-  'Data Privacy & Security': {
-    color: 'text-[#34B1AA]', bg: 'bg-[#34B1AA]/10', border: 'border-[#34B1AA]/25',
-    icon: FileKey, badge: 'PRIVACY'
-  },
-}
-
-const getFallbackMeta = (name: string) => {
-  const n = name.toLowerCase()
-  if (n.includes('risk')) return { ...DOMAIN_META['Risk Management'], badge: name.slice(0, 4).toUpperCase() }
-  if (n.includes('patch')) return { ...DOMAIN_META['Patch Management'], badge: name.slice(0, 4).toUpperCase() }
-  if (n.includes('data') || n.includes('privacy')) return { ...DOMAIN_META['Data Privacy & Security'], badge: name.slice(0, 4).toUpperCase() }
-  return { color: 'text-[#3B8FF3]', bg: 'bg-[#3B8FF3]/10', border: 'border-[#3B8FF3]/25', icon: Database, badge: name.slice(0, 4).toUpperCase() }
-}
-
-const getMeta = (name: string) => DOMAIN_META[name] ?? getFallbackMeta(name)
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const chunkCount = (text: string | string[]) => Array.isArray(text) ? text.length : 1
-const totalChunks = (domains: Domain[]) => domains.reduce((a, d) => a + chunkCount(d.text), 0)
-const totalNist = (domains: Domain[]) => domains.reduce((a, d) => a + (d.related_nist_policies?.length ?? 0), 0)
+const chunkCount = (text: string | string[]) =>
+  Array.isArray(text) ? text.length : 1;
+const totalChunks = (domains: Domain[]) =>
+  domains.reduce((a, d) => a + chunkCount(d.text), 0);
+const totalNist = (domains: Domain[]) =>
+  domains.reduce((a, d) => a + (d.related_nist_policies?.length ?? 0), 0);
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: DomainSelectionProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'nist'>('overview')
+export function DomainSelectionView({
+  domains,
+  onSelect,
+  onSelectAll,
+  onBack,
+}: DomainSelectionProps) {
+  const [activeTab, setActiveTab] = useState<"overview" | "nist">("overview");
 
   const handleGenerate = () => {
     if (onSelectAll) {
-      onSelectAll(domains)
+      onSelectAll(domains);
     } else if (domains.length > 0) {
       // Fallback: trigger first domain for compatibility
-      onSelect(domains[0])
+      onSelect(domains[0]);
     }
-  }
+  };
 
   return (
     <div className="max-w-5xl mx-auto pb-36 space-y-8">
-
       {/* ── Page Header ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -102,14 +74,15 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
           Analysis Summary
         </div>
         <h1 className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
-          We identified{' '}
+          We identified{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F29F67] to-[#3B8FF3]">
-            {domains.length} security domain{domains.length !== 1 ? 's' : ''}
-          </span>{' '}
+            {domains.length} security domain{domains.length !== 1 ? "s" : ""}
+          </span>{" "}
           in your document
         </h1>
         <p className="text-slate-400 text-base max-w-2xl mx-auto">
-          Review the detected domains and their associated NIST controls. When ready, generate a complete gap analysis report.
+          Review the detected domains and their associated NIST controls. When
+          ready, generate a complete gap analysis report.
         </p>
       </motion.div>
 
@@ -120,9 +93,27 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
         transition={{ delay: 0.1 }}
         className="grid grid-cols-3 gap-4"
       >
-        <StatPill icon={Layers} label="Domains Detected" value={domains.length} color="text-[#3B8FF3]" bg="bg-[#3B8FF3]/10" />
-        <StatPill icon={FileText} label="Total Input Chunks" value={totalChunks(domains)} color="text-[#F29F67]" bg="bg-[#F29F67]/10" />
-        <StatPill icon={BookOpen} label="NIST Controls Retrieved" value={totalNist(domains)} color="text-[#34B1AA]" bg="bg-[#34B1AA]/10" />
+        <StatPill
+          icon={Layers}
+          label="Domains Detected"
+          value={domains.length}
+          color="text-[#3B8FF3]"
+          bg="bg-[#3B8FF3]/10"
+        />
+        <StatPill
+          icon={FileText}
+          label="Total Input Chunks"
+          value={totalChunks(domains)}
+          color="text-[#F29F67]"
+          bg="bg-[#F29F67]/10"
+        />
+        <StatPill
+          icon={BookOpen}
+          label="NIST Controls Retrieved"
+          value={totalNist(domains)}
+          color="text-[#34B1AA]"
+          bg="bg-[#34B1AA]/10"
+        />
       </motion.div>
 
       {/* ── Tabs ── */}
@@ -133,17 +124,17 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
         className="flex items-center gap-1 bg-[#0f0f1c] border border-white/6 rounded-xl p-1 w-fit"
       >
         {[
-          { key: 'overview', label: 'Overview', icon: BarChart2 },
-          { key: 'nist', label: 'NIST Policies', icon: BookOpen },
+          { key: "overview", label: "Overview", icon: BarChart2 },
+          { key: "nist", label: "NIST Policies", icon: BookOpen },
         ].map(({ key, label, icon: Icon }) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key as any)}
+            onClick={() => setActiveTab(key as "overview" | "nist")}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
+              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
               activeTab === key
-                ? 'bg-[#1e1e35] text-white shadow-sm border border-white/8'
-                : 'text-slate-500 hover:text-slate-300'
+                ? "bg-[#1e1e35] text-white shadow-sm border border-white/8"
+                : "text-slate-500 hover:text-slate-300",
             )}
           >
             <Icon className="w-3.5 h-3.5" />
@@ -154,9 +145,8 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
 
       {/* ── Tab Content ── */}
       <AnimatePresence mode="wait">
-
         {/* OVERVIEW */}
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <motion.div
             key="overview"
             initial={{ opacity: 0, y: 10 }}
@@ -171,7 +161,7 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
         )}
 
         {/* NIST POLICIES */}
-        {activeTab === 'nist' && (
+        {activeTab === "nist" && (
           <motion.div
             key="nist"
             initial={{ opacity: 0, y: 10 }}
@@ -184,7 +174,6 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
             ))}
           </motion.div>
         )}
-
       </AnimatePresence>
 
       {/* ── Fixed Bottom CTA ── */}
@@ -192,9 +181,13 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
         <div className="pointer-events-auto max-w-5xl mx-auto px-6 pb-6">
           <div className="bg-[#0d0d1e]/90 backdrop-blur-xl border border-white/8 rounded-2xl px-6 py-4 flex items-center justify-between gap-6 shadow-2xl shadow-black/60">
             <div className="min-w-0">
-              <p className="text-white font-semibold text-sm">Ready to generate gap analysis?</p>
+              <p className="text-white font-semibold text-sm">
+                Ready to generate gap analysis?
+              </p>
               <p className="text-slate-500 text-xs mt-0.5 truncate">
-                {domains.length} domain{domains.length !== 1 ? 's' : ''} · {totalChunks(domains)} chunks · {totalNist(domains)} NIST controls
+                {domains.length} domain{domains.length !== 1 ? "s" : ""} ·{" "}
+                {totalChunks(domains)} chunks · {totalNist(domains)} NIST
+                controls
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -219,16 +212,16 @@ export function DomainSelectionView({ domains, onSelect, onSelectAll, onBack }: 
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ─── Domain Card (Overview Tab) ──────────────────────────────────────────────
 
 function DomainCard({ domain, index }: { domain: Domain; index: number }) {
-  const meta = getMeta(domain.domain)
-  const Icon = meta.icon
-  const chunks = chunkCount(domain.text)
-  const nistCount = domain.related_nist_policies?.length ?? 0
+  const meta = getMeta(domain.domain);
+  const Icon = meta.icon;
+  const chunks = chunkCount(domain.text);
+  const nistCount = domain.related_nist_policies?.length ?? 0;
 
   return (
     <motion.div
@@ -236,31 +229,53 @@ function DomainCard({ domain, index }: { domain: Domain; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08 }}
       className={cn(
-        'group relative overflow-hidden rounded-2xl border bg-[#0f0f1c] p-6 transition-all duration-300',
-        'hover:-translate-y-1 hover:shadow-2xl',
-        meta.border
+        "group relative overflow-hidden rounded-2xl border bg-[#0f0f1c] p-6 transition-all duration-300",
+        "hover:-translate-y-1 hover:shadow-2xl",
+        meta.border,
       )}
     >
       {/* Subtle glow overlay */}
-      <div className={cn('absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none', meta.bg)} style={{ opacity: 0 }}
-        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
+      <div
+        className={cn(
+          "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none",
+          meta.bg,
+        )}
+        style={{ opacity: 0 }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
       />
-      <div className={cn('absolute top-0 left-0 right-0 h-px', `bg-gradient-to-r from-transparent ${meta.color.replace('text-', 'via-')} to-transparent opacity-50`)} />
+      <div
+        className={cn(
+          "absolute top-0 left-0 right-0 h-px",
+          `bg-gradient-to-r from-transparent ${meta.color.replace("text-", "via-")} to-transparent opacity-50`,
+        )}
+      />
 
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className={cn('p-3 rounded-xl border', meta.bg, meta.border)}>
-            <Icon className={cn('w-5 h-5', meta.color)} />
+          <div className={cn("p-3 rounded-xl border", meta.bg, meta.border)}>
+            <Icon className={cn("w-5 h-5", meta.color)} />
           </div>
-          <span className={cn('text-[10px] font-bold font-mono tracking-widest px-2.5 py-1 rounded-full border', meta.color, meta.bg, meta.border)}>
+          <span
+            className={cn(
+              "text-[10px] font-bold font-mono tracking-widest px-2.5 py-1 rounded-full border",
+              meta.color,
+              meta.bg,
+              meta.border,
+            )}
+          >
             {meta.badge}
           </span>
         </div>
 
         {/* Domain name */}
-        <h3 className={cn('text-lg font-bold text-white mb-1 group-hover:transition-colors', `group-hover:${meta.color}`)}>
+        <h3
+          className={cn(
+            "text-lg font-bold text-white mb-1 group-hover:transition-colors",
+            `group-hover:${meta.color}`,
+          )}
+        >
           {domain.domain}
         </h3>
 
@@ -268,19 +283,25 @@ function DomainCard({ domain, index }: { domain: Domain; index: number }) {
         <div className="flex items-center gap-4 mt-3 mb-5">
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
             <FileText className="w-3.5 h-3.5 text-slate-500" />
-            <span><span className="text-white font-semibold">{chunks}</span> input chunk{chunks !== 1 ? 's' : ''}</span>
+            <span>
+              <span className="text-white font-semibold">{chunks}</span> input
+              chunk{chunks !== 1 ? "s" : ""}
+            </span>
           </div>
           <div className="w-px h-3 bg-white/10" />
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
             <BookOpen className="w-3.5 h-3.5 text-slate-500" />
-            <span><span className="text-white font-semibold">{nistCount}</span> NIST control{nistCount !== 1 ? 's' : ''}</span>
+            <span>
+              <span className="text-white font-semibold">{nistCount}</span> NIST
+              control{nistCount !== 1 ? "s" : ""}
+            </span>
           </div>
         </div>
 
         {/* Chunk preview — first chunk only, trimmed */}
         <div className="bg-[#080812] border border-white/5 rounded-xl p-3 text-xs text-slate-400 leading-relaxed line-clamp-3 font-mono">
           {Array.isArray(domain.text)
-            ? `"${(domain.text[0] ?? '').slice(0, 200).trim()}…"`
+            ? `"${(domain.text[0] ?? "").slice(0, 200).trim()}…"`
             : `"${String(domain.text).slice(0, 200).trim()}…"`}
         </div>
 
@@ -290,118 +311,67 @@ function DomainCard({ domain, index }: { domain: Domain; index: number }) {
             <CheckCircle2 className="w-3.5 h-3.5 text-[#34B1AA]" />
             <span className="text-xs text-slate-500">Ready for analysis</span>
           </div>
-          <div className={cn('flex items-center gap-1 text-xs font-semibold', meta.color)}>
+          <div
+            className={cn(
+              "flex items-center gap-1 text-xs font-semibold",
+              meta.color,
+            )}
+          >
             <span>Included</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
         </div>
       </div>
     </motion.div>
-  )
-}
-
-// ─── Breakdown Row (Domain Breakdown Tab) ────────────────────────────────────
-
-function BreakdownRow({ domain, index }: { domain: Domain; index: number }) {
-  const meta = getMeta(domain.domain)
-  const Icon = meta.icon
-  const chunks = Array.isArray(domain.text) ? domain.text : [domain.text]
-  const [expanded, setExpanded] = useState(false)
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.07 }}
-      className={cn('rounded-xl border bg-[#0f0f1c] overflow-hidden transition-all', meta.border)}
-    >
-      {/* Header */}
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors"
-      >
-        <div className="flex items-center gap-4">
-          <div className={cn('p-2 rounded-lg', meta.bg)}>
-            <Icon className={cn('w-4 h-4', meta.color)} />
-          </div>
-          <div className="text-left">
-            <p className="text-white font-semibold text-sm">{domain.domain}</p>
-            <p className="text-slate-500 text-xs mt-0.5">{chunks.length} chunk{chunks.length !== 1 ? 's' : ''} extracted</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 text-xs text-slate-500 mr-2">
-            <span className={cn('font-bold text-sm', meta.color)}>{chunks.length}</span> chunks
-          </div>
-          {expanded
-            ? <ChevronUp className="w-4 h-4 text-slate-500" />
-            : <ChevronDown className="w-4 h-4 text-slate-500" />}
-        </div>
-      </button>
-
-      {/* Expanded chunks */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-5 pb-4 space-y-2 max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
-              {chunks.map((chunk, i) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[#080812] border border-white/5">
-                  <span className={cn('text-[10px] font-bold font-mono mt-0.5 shrink-0 px-1.5 py-0.5 rounded', meta.bg, meta.color)}>
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <p className="text-xs text-slate-400 leading-relaxed line-clamp-4">{chunk}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  )
+  );
 }
 
 // ─── NIST Row (NIST Policies Tab) ────────────────────────────────────────────
 
 function NistRow({ domain, index }: { domain: Domain; index: number }) {
-  const meta = getMeta(domain.domain)
-  const Icon = meta.icon
-  const policies = domain.related_nist_policies ?? []
-  const [expanded, setExpanded] = useState(false)
+  const meta = getMeta(domain.domain);
+  const Icon = meta.icon;
+  const policies = domain.related_nist_policies ?? [];
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.07 }}
-      className={cn('rounded-xl border bg-[#0f0f1c] overflow-hidden', meta.border)}
+      className={cn(
+        "rounded-xl border bg-[#0f0f1c] overflow-hidden",
+        meta.border,
+      )}
     >
       {/* Header */}
       <button
-        onClick={() => setExpanded(e => !e)}
+        onClick={() => setExpanded((e) => !e)}
         className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors"
       >
         <div className="flex items-center gap-4">
-          <div className={cn('p-2 rounded-lg', meta.bg)}>
-            <Icon className={cn('w-4 h-4', meta.color)} />
+          <div className={cn("p-2 rounded-lg", meta.bg)}>
+            <Icon className={cn("w-4 h-4", meta.color)} />
           </div>
           <div className="text-left">
             <p className="text-white font-semibold text-sm">{domain.domain}</p>
             <p className="text-slate-500 text-xs mt-0.5">
-              {policies.length} NIST control{policies.length !== 1 ? 's' : ''} matched
+              {policies.length} NIST control{policies.length !== 1 ? "s" : ""}{" "}
+              matched
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={cn('text-lg font-extrabold tabular-nums', meta.color)}>{policies.length}</span>
-          {expanded
-            ? <ChevronUp className="w-4 h-4 text-slate-500" />
-            : <ChevronDown className="w-4 h-4 text-slate-500" />}
+          <span
+            className={cn("text-lg font-extrabold tabular-nums", meta.color)}
+          >
+            {policies.length}
+          </span>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-slate-500" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-500" />
+          )}
         </div>
       </button>
 
@@ -410,46 +380,74 @@ function NistRow({ domain, index }: { domain: Domain; index: number }) {
         {expanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
+            animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 space-y-2 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
               {policies.map((policy, i) => {
-                const firstLine = policy.split('\n')[0].trim()
-                const preview = firstLine.length > 90 ? firstLine.slice(0, 90) + '…' : firstLine
+                const firstLine = policy.split("\n")[0].trim();
+                const preview =
+                  firstLine.length > 90
+                    ? firstLine.slice(0, 90) + "…"
+                    : firstLine;
                 return (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-[#080812] border border-white/5">
-                    <span className={cn('text-[10px] font-bold font-mono mt-0.5 shrink-0 px-1.5 py-0.5 rounded', meta.bg, meta.color)}>
-                      P{String(i + 1).padStart(2, '0')}
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-[#080812] border border-white/5"
+                  >
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold font-mono mt-0.5 shrink-0 px-1.5 py-0.5 rounded",
+                        meta.bg,
+                        meta.color,
+                      )}
+                    >
+                      P{String(i + 1).padStart(2, "0")}
                     </span>
-                    <p className="text-xs text-slate-300 leading-relaxed">{preview}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {preview}
+                    </p>
                   </div>
-                )
+                );
               })}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
-  )
+  );
 }
 
 // ─── Stat Pill ───────────────────────────────────────────────────────────────
 
-function StatPill({ icon: Icon, label, value, color, bg }: {
-  icon: any; label: string; value: number; color: string; bg: string
+function StatPill({
+  icon: Icon,
+  label,
+  value,
+  color,
+  bg,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  color: string;
+  bg: string;
 }) {
   return (
     <div className="flex items-center gap-4 bg-[#0f0f1c] border border-white/6 rounded-xl px-5 py-4">
-      <div className={cn('p-2.5 rounded-xl', bg)}>
-        <Icon className={cn('w-5 h-5', color)} />
+      <div className={cn("p-2.5 rounded-xl", bg)}>
+        <Icon className={cn("w-5 h-5", color)} />
       </div>
       <div>
-        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{label}</p>
-        <p className={cn('text-2xl font-extrabold tabular-nums mt-0.5', color)}>{value}</p>
+        <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+          {label}
+        </p>
+        <p className={cn("text-2xl font-extrabold tabular-nums mt-0.5", color)}>
+          {value}
+        </p>
       </div>
     </div>
-  )
+  );
 }
