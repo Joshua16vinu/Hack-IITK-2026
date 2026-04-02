@@ -41,8 +41,8 @@ def batch_chunks(chunks: list, batch_size: int = CHUNKS_PER_BATCH) -> list:
 with open(Path(DOMAIN_DATA_PATH), "r") as f:
     DOMAIN_KEYWORDS = {entry["domain"]: entry["keywords"] for entry in json.load(f)}
 
-_kb_collection = get_chroma_client().get_collection(KB_COLLECTION)
-_nist_collection = get_chroma_client().get_collection(NIST_COLLECTION)
+_kb_collection = get_chroma_client().get_or_create_collection(KB_COLLECTION)
+_nist_collection = get_chroma_client().get_or_create_collection(NIST_COLLECTION)
 
 
 def _semantic_scores(chunk_embedding: list[float]) -> dict[str, float]:
