@@ -1,13 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface StreamingTextProps {
   text: string;
   id: string;
   speed?: number;
+  start?: boolean;
+  onComplete?: () => void;
 }
 
-export function StreamingText({ text, id, speed = 150 }: StreamingTextProps) {
-  const words = text.split(" ");
+export function StreamingText({
+  text,
+  id,
+  speed = 150,
+  start = true,
+  onComplete,
+}: StreamingTextProps) {
   const fileId =
     typeof window !== "undefined"
       ? localStorage.getItem("fileId") || "default"
@@ -16,11 +23,46 @@ export function StreamingText({ text, id, speed = 150 }: StreamingTextProps) {
   const isCached =
     typeof window !== "undefined" &&
     sessionStorage.getItem(storageKey) === "true";
+  const resetKey = `${id}:${start}:${isCached}:${text.length}`;
 
-  const [wordIndex, setWordIndex] = useState(isCached ? words.length : 0);
+  return (
+    <StreamingTextRunner
+      key={resetKey}
+      text={text}
+      speed={speed}
+      start={start}
+      onComplete={onComplete}
+      isCached={isCached}
+      storageKey={storageKey}
+    />
+  );
+}
+
+interface StreamingTextRunnerProps {
+  text: string;
+  speed: number;
+  start: boolean;
+  onComplete?: () => void;
+  isCached: boolean;
+  storageKey: string;
+}
+
+function StreamingTextRunner({
+  text,
+  speed,
+  start,
+  onComplete,
+  isCached,
+  storageKey,
+}: StreamingTextRunnerProps) {
+  const words = text.split(" ");
+  const [wordIndex, setWordIndex] = useState(
+    start && isCached ? words.length : 0,
+  );
+  const hasNotifiedCompletion = useRef(false);
 
   useEffect(() => {
-    if (isCached) {
+    if (!start || isCached) {
       return;
     }
 
@@ -34,17 +76,28 @@ export function StreamingText({ text, id, speed = 150 }: StreamingTextProps) {
         }
         return next;
       });
-
-      if (wordIndex >= words.length) {
-        clearInterval(intervalId);
-      }
     }, speed);
 
     return () => clearInterval(intervalId);
-  }, [isCached, speed, storageKey, wordIndex, words.length]);
+  }, [isCached, speed, start, storageKey, words.length]);
 
-  const displayedText = isCached ? text : words.slice(0, wordIndex).join(" ");
-  const isComplete = isCached || wordIndex >= words.length;
+  useEffect(() => {
+    if (!start || !onComplete || hasNotifiedCompletion.current) {
+      return;
+    }
+
+    if (isCached || wordIndex >= words.length) {
+      hasNotifiedCompletion.current = true;
+      onComplete();
+    }
+  }, [isCached, onComplete, start, wordIndex, words.length]);
+
+  const displayedText = start
+    ? isCached
+      ? text
+      : words.slice(0, wordIndex).join(" ")
+    : "";
+  const isComplete = !start || isCached || wordIndex >= words.length;
 
   return (
     <span>

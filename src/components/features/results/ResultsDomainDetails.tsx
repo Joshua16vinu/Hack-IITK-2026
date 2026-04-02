@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -23,6 +24,44 @@ export function ResultsDomainDetails({
   activeGapData,
 }: ResultsDomainDetailsProps) {
   const activeGapsCount = activeGapData?.gaps?.length || 0;
+  const [completedPolicyIds, setCompletedPolicyIds] = useState<string[]>([]);
+  const [completedGapIds, setCompletedGapIds] = useState<string[]>([]);
+
+  const policyIds = domain.related_nist_policies.map(
+    (_, policyIndex) => `${domain.domain}_nist_${policyIndex}`,
+  );
+  const activePolicyStreamIndex = policyIds.findIndex(
+    (policyId) => !completedPolicyIds.includes(policyId),
+  );
+
+  const gapIds =
+    activeGapData?.gaps?.map(
+      (_, gapIndex) => `gap_${domain.domain}_${gapIndex}`,
+    ) ?? [];
+
+  const activeGapStreamIndex = gapIds.findIndex(
+    (gapId) => !completedGapIds.includes(gapId),
+  );
+
+  const handlePolicyStreamComplete = (policyId: string) => {
+    setCompletedPolicyIds((current) => {
+      if (current.includes(policyId)) {
+        return current;
+      }
+
+      return [...current, policyId];
+    });
+  };
+
+  const handleGapStreamComplete = (gapId: string) => {
+    setCompletedGapIds((current) => {
+      if (current.includes(gapId)) {
+        return current;
+      }
+
+      return [...current, gapId];
+    });
+  };
 
   return (
     <div className="flex-1 relative overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 bg-[#f8f9fc] p-8 lg:p-12">
@@ -90,7 +129,6 @@ export function ResultsDomainDetails({
                     </h2>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 gap-4">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -98,21 +136,38 @@ export function ResultsDomainDetails({
                     transition={{ delay: 0.1 }}
                     className="group relative bg-white rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-md transition-all duration-300"
                   >
-                    {activeGapData.gaps.map((gap, gapIndex) => (
-                      <div
-                        className="flex items-start gap-4 relative z-10"
-                        key={`${domain.domain}-${gapIndex}`}
-                      >
-                        <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
-                        <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
-                          <StreamingText
-                            text={gap}
-                            id={`gap_${domain.domain}_${gapIndex}`}
-                            speed={50}
-                          />
-                        </p>
-                      </div>
-                    ))}
+                    {activeGapData.gaps.map((gap, gapIndex) => {
+                      const gapId = `gap_${domain.domain}_${gapIndex}`;
+
+                      const isAlreadyCompleted =
+                        completedGapIds.includes(gapId);
+
+                      const isActiveNow =
+                        activeGapStreamIndex === -1
+                          ? false
+                          : gapIndex === activeGapStreamIndex;
+
+                      if (!isActiveNow && !isAlreadyCompleted) return null;
+
+                      return (
+                        <div
+                          className="flex items-start gap-4 relative z-10"
+                          key={`${domain.domain}-${gapIndex}`}
+                        >
+                          <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
+
+                          <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
+                            <StreamingText
+                              text={gap}
+                              id={gapId}
+                              speed={100}
+                              start={isAlreadyCompleted || isActiveNow}
+                              onComplete={() => handleGapStreamComplete(gapId)}
+                            />
+                          </p>
+                        </div>
+                      );
+                    })}
                   </motion.div>
                 </div>
               </div>
@@ -132,37 +187,53 @@ export function ResultsDomainDetails({
               </div>
 
               <div className="grid grid-cols-1 gap-5">
-                {domain.related_nist_policies.map((policyText, policyIndex) => (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 + policyIndex * 0.04 }}
-                    key={`${domain.domain}-policy-${policyIndex}`}
-                    className="group relative bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-200 transition-all duration-300 overflow-hidden"
-                  >
-                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {domain.related_nist_policies.map((policyText, policyIndex) => {
+                  const policyId = `${domain.domain}_nist_${policyIndex}`;
+                  const isAlreadyCompleted =
+                    completedPolicyIds.includes(policyId);
+                  const isActiveNow =
+                    activePolicyStreamIndex === -1
+                      ? false
+                      : policyIndex === activePolicyStreamIndex;
 
-                    <div className="flex items-start gap-5 relative z-10">
-                      <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#f8f9fc] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors duration-300">
-                        <BookOpen className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 text-slate-500 text-[10px] font-black tracking-widest uppercase rounded-lg transition-colors">
-                            CONTROL {String(policyIndex + 1).padStart(2, "0")}
-                          </span>
+                  if (!isActiveNow && !isAlreadyCompleted) return null;
+
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + policyIndex * 0.04 }}
+                      key={`${domain.domain}-policy-${policyIndex}`}
+                      className="group relative bg-white rounded-3xl p-7 border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 hover:border-blue-200 transition-all duration-300 overflow-hidden"
+                    >
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                      <div className="flex items-start gap-5 relative z-10">
+                        <div className="w-12 h-12 shrink-0 rounded-2xl bg-[#f8f9fc] border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:border-blue-100 transition-colors duration-300">
+                          <BookOpen className="w-5 h-5" />
                         </div>
-                        <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
-                          <StreamingText
-                            text={policyText}
-                            id={`${domain.domain}_nist_${policyIndex}`}
-                            speed={100}
-                          />
-                        </p>
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1 bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 text-slate-500 text-[10px] font-black tracking-widest uppercase rounded-lg transition-colors">
+                              CONTROL {String(policyIndex + 1).padStart(2, "0")}
+                            </span>
+                          </div>
+                          <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
+                            <StreamingText
+                              text={policyText}
+                              id={policyId}
+                              speed={100}
+                              start={isAlreadyCompleted || isActiveNow}
+                              onComplete={() =>
+                                handlePolicyStreamComplete(policyId)
+                              }
+                            />
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           ) : (
