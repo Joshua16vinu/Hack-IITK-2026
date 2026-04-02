@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import axios from "axios";
@@ -17,6 +17,8 @@ import {
 const GAP_CACHE_PREFIX = "gapAnalysis:";
 
 const getGapCacheKey = (fileId: string) => `${GAP_CACHE_PREFIX}${fileId}`;
+
+const normalizeDomainName = (domainName: string) => domainName.trim().toLowerCase();
 
 const readGapAnalysisCache = (fileId: string): GapAnalysisCache | null => {
   if (typeof window === "undefined") return null;
@@ -287,7 +289,138 @@ export default function ResultsPage() {
     updateGapResults,
   ]);
 
-  if (!isHydrated || !domains.length) {
+  const domainWiseDomains = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        domain: string;
+        text: string[];
+        relatedNistById: Map<string, DomainEntry["related_nist_policies"][number]>;
+      }
+    >();
+
+    for (const domain of domains) {
+      if (!domain?.domain) continue;
+
+      const key = normalizeDomainName(domain.domain);
+      const existing = grouped.get(key);
+      const domainTexts = Array.isArray(domain.text)
+        ? domain.text
+        : typeof domain.text === "string"
+          ? [domain.text]
+          : [];
+
+      if (existing) {
+        for (const chunkText of domainTexts) {
+          if (chunkText) {
+            existing.text.push(chunkText);
+          }
+        }
+
+        for (const policy of domain.related_nist_policies ?? []) {
+          if (!policy?.id) continue;
+          existing.relatedNistById.set(policy.id, policy);
+        }
+
+        continue;
+      }
+
+      const relatedNistById = new Map<
+        string,
+        DomainEntry["related_nist_policies"][number]
+      >();
+
+      for (const policy of domain.related_nist_policies ?? []) {
+        if (!policy?.id) continue;
+        relatedNistById.set(policy.id, policy);
+      }
+
+      grouped.set(key, {
+        domain: domain.domain,
+        text: [...domainTexts],
+        relatedNistById,
+      });
+    }
+
+    return Array.from(grouped.values()).map((entry) => ({
+      domain: entry.domain,
+      text: entry.text,
+      related_nist_policies: Array.from(entry.relatedNistById.values()),
+    }));
+  }, [domains]);
+
+  const domainWiseGapMap = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        domain: string;
+        hasProcessing: boolean;
+        hasCompleted: boolean;
+        hasFailed: boolean;
+        gaps: Set<string>;
+      }
+    >();
+
+    for (const result of gapResults) {
+      if (!result?.domain) continue;
+
+      const key = normalizeDomainName(result.domain);
+      const existing = grouped.get(key);
+
+      if (existing) {
+        existing.hasProcessing ||= result.status === "processing";
+        existing.hasCompleted ||= result.status === "completed";
+        existing.hasFailed ||= result.status === "failed";
+
+        if (Array.isArray(result.gaps)) {
+          for (const gap of result.gaps) {
+            if (gap) {
+              existing.gaps.add(gap);
+            }
+          }
+        }
+
+        continue;
+      }
+
+      grouped.set(key, {
+        domain: result.domain,
+        hasProcessing: result.status === "processing",
+        hasCompleted: result.status === "completed",
+        hasFailed: result.status === "failed",
+        gaps: new Set((result.gaps ?? []).filter(Boolean)),
+      });
+    }
+
+    const map = new Map<string, GapResult>();
+    grouped.forEach((entry, key) => {
+      const status: GapResult["status"] = entry.hasProcessing
+        ? "processing"
+        : entry.hasCompleted
+          ? "completed"
+          : "failed";
+
+      map.set(key, {
+        domain: entry.domain,
+        status,
+        gaps: Array.from(entry.gaps),
+      });
+    });
+
+    return map;
+  }, [gapResults]);
+
+  const domainWiseGapResults = useMemo(
+    () => Array.from(domainWiseGapMap.values()),
+    [domainWiseGapMap],
+  );
+
+  const getDomainGapData = useCallback(
+    (domainName: string) => domainWiseGapMap.get(normalizeDomainName(domainName)),
+    [domainWiseGapMap],
+  );
+
+  if (!isHydrated || !domainWiseDomains.length) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -295,20 +428,18 @@ export default function ResultsPage() {
     );
   }
 
-  const activeDomain = domains[activeDomainIdx];
+  const safeActiveDomainIdx = Math.min(activeDomainIdx, domainWiseDomains.length - 1);
+  const activeDomain = domainWiseDomains[safeActiveDomainIdx];
   const activeNist = activeDomain.related_nist_policies?.length || 0;
-  const totalNist = domains.reduce(
+  const totalNist = domainWiseDomains.reduce(
     (count, domain) => count + (domain.related_nist_policies?.length || 0),
     0,
   );
 
-  const getDomainGapData = (domainName: string) =>
-    gapResults.find((gapItem) => gapItem.domain === domainName);
-
   const activeGapData = getDomainGapData(activeDomain.domain);
 
   const handleDownloadGapsPdf = () => {
-    const content = gapResults
+    const content = domainWiseGapResults
       .map((result, index) => {
         const gapsText =
           result.gaps && result.gaps.length > 0
@@ -345,7 +476,7 @@ export default function ResultsPage() {
 
             <button
               onClick={handleDownloadGapsPdf}
-              disabled={analyzing || gapResults.length === 0}
+              disabled={analyzing || domainWiseGapResults.length === 0}
               className="flex items-center gap-2 px-6 py-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-all border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download className="w-4 h-4" />
@@ -374,8 +505,8 @@ export default function ResultsPage() {
 
       <div className="flex flex-1 overflow-hidden">
         <ResultsSidebar
-          domains={domains}
-          activeDomainIdx={activeDomainIdx}
+          domains={domainWiseDomains}
+          activeDomainIdx={safeActiveDomainIdx}
           onSelectDomain={setActiveDomainIdx}
           totalNist={totalNist}
           getDomainGapData={getDomainGapData}
@@ -383,7 +514,7 @@ export default function ResultsPage() {
 
         <ResultsDomainDetails
           domain={activeDomain}
-          activeDomainIdx={activeDomainIdx}
+          activeDomainIdx={safeActiveDomainIdx}
           activeNist={activeNist}
           activeGapData={activeGapData}
         />

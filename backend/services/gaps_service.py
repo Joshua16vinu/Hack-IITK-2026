@@ -33,7 +33,17 @@ def process_data(data):
             current_job["current_domain"] = domain
 
             formatted_policy = "\n\n".join(text) if isinstance(text, list) else (text or "")
-            formatted_nist = "\n\n".join(nist_policies) if nist_policies else ""
+            formatted_nist = ""
+            if isinstance(nist_policies, list):
+                formatted_nist = "\n\n".join(
+                    policy.get("content", "")
+                    if isinstance(policy, dict)
+                    else str(policy)
+                    for policy in nist_policies
+                    if policy
+                )
+            elif nist_policies:
+                formatted_nist = str(nist_policies)
 
             try:
                 llm_response = call_llm(

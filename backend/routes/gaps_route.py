@@ -16,7 +16,6 @@ async def analyze_gaps(request: Request, background_tasks: BackgroundTasks):
 
     data = await request.json()
 
-    # ✅ Handle empty input
     if not data:
         logger.warning("Gap analysis request received with empty payload")
         return {"status": "failed", "message": "No data provided"}
