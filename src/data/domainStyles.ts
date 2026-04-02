@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 // Domain style mapping with full names (used in NIST policies page)
-export const DOMAIN_STYLE: Record<
+const DOMAIN_STYLE: Record<
   string,
   { icon: LucideIcon; color: string; bg: string; border: string }
 > = {
@@ -39,7 +39,7 @@ export const DOMAIN_STYLE: Record<
 };
 
 // Domain meta mapping with short names and badges (used in analysis view)
-export const DOMAIN_META: Record<
+const DOMAIN_META: Record<
   string,
   { color: string; bg: string; border: string; icon: LucideIcon; badge: string }
 > = {
@@ -83,7 +83,7 @@ export const getStyle = (name: string) =>
   };
 
 // Get style by short domain name (for analysis view)
-export const getFallbackMeta = (name: string) => {
+const getFallbackMeta = (name: string) => {
   const n = name.toLowerCase();
   if (n.includes("risk"))
     return {

@@ -124,3 +124,7 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-brand-primary);
 }
+
+button{
+  cursor: pointer;
+}

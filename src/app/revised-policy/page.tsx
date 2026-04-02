@@ -6,6 +6,7 @@ import {
   Loader2,
   ArrowLeft,
   ChevronRight,
+  Download,
   FileText,
   ShieldCheck,
   RefreshCw,
@@ -15,6 +16,7 @@ import { AppTopBar } from "@/components/layout/AppTopBar";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
+import { downloadTextAsPdf } from "@/lib/pdf";
 
 interface GapCacheResult {
   domain: string;
@@ -167,6 +169,14 @@ export default function RevisedPolicyPage() {
     }
   }, [handleGeneratePolicy, hasData]);
 
+  const handleDownloadRevisedPolicyPdf = () => {
+    downloadTextAsPdf({
+      title: "Revised Policy",
+      content: streamedText,
+      fileName: `revised-policy`,
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f6fa]">
       <AppTopBar
@@ -180,6 +190,14 @@ export default function RevisedPolicyPage() {
               <ArrowLeft className="w-4 h-4" /> Back to Analysis
             </button>
             <div className="w-px h-6 bg-slate-200 hidden sm:block" />
+            <button
+              onClick={handleDownloadRevisedPolicyPdf}
+              disabled={!streamedText || loading}
+              className="flex items-center gap-2 px-6 py-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-all border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download Policy
+            </button>
             <button
               onClick={() => router.push("/roadmap")}
               disabled={!streamedText || loading}

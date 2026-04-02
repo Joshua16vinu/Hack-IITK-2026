@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import axios from "axios";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { ResultsSidebar } from "@/components/features/results/ResultsSidebar";
 import { ResultsDomainDetails } from "@/components/features/results/ResultsDomainDetails";
+import { downloadTextAsPdf } from "@/lib/pdf";
 import {
   DomainEntry,
   GapAnalysisCache,
@@ -306,6 +307,25 @@ export default function ResultsPage() {
 
   const activeGapData = getDomainGapData(activeDomain.domain);
 
+  const handleDownloadGapsPdf = () => {
+    const content = gapResults
+      .map((result, index) => {
+        const gapsText =
+          result.gaps && result.gaps.length > 0
+            ? result.gaps.map((gap, gapIndex) => `${gapIndex + 1}. ${gap}`).join("\n")
+            : "No gaps available";
+
+        return `${index + 1}. Domain: ${result.domain}\n\n${gapsText}`;
+      })
+      .join("\n\n----------------------------------------\n\n");
+
+    downloadTextAsPdf({
+      title: "Gap Analysis",
+      content,
+      fileName: `gap-analysis`,
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#f5f6fa]">
       <AppTopBar
@@ -320,6 +340,15 @@ export default function ResultsPage() {
             </button>
 
             <div className="w-px h-6 bg-slate-200" />
+
+            <button
+              onClick={handleDownloadGapsPdf}
+              disabled={analyzing || gapResults.length === 0}
+              className="flex items-center gap-2 px-6 py-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold rounded-lg transition-all border border-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download Gaps
+            </button>
 
             <button
               onClick={() => router.push("/revised-policy")}
