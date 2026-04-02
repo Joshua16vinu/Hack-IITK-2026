@@ -307,7 +307,7 @@ export default function ResultsPage() {
   const activeGapData = getDomainGapData(activeDomain.domain);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex flex-col h-screen overflow-hidden bg-[#f5f6fa]">
       <AppTopBar
         section="Analysis Results"
         actions={

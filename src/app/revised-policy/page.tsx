@@ -168,13 +168,13 @@ export default function RevisedPolicyPage() {
   }, [handleGeneratePolicy, hasData]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex flex-col min-h-screen bg-[#f5f6fa]">
       <AppTopBar
         section="Revised Policy"
         actions={
           <>
             <button
-              onClick={() => router.push("/results")}
+              onClick={() => router.push("/analysis")}
               className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Analysis
@@ -202,9 +202,8 @@ export default function RevisedPolicyPage() {
             Generate Revised Policy
           </h1>
           <p className="text-slate-500 font-medium max-w-2xl mx-auto text-base leading-relaxed">
-            Our AI engine will restructure and rewrite your policy document to
-            satisfy all identified NIST controls and close the existing domain
-            gaps.
+            We will restructure and rewrite your policy document to satisfy all
+            identified NIST controls and close the existing domain gaps.
           </p>
         </div>
 
@@ -212,14 +211,14 @@ export default function RevisedPolicyPage() {
           <ErrorBanner
             message={errorText}
             action={
-              !hasData ? (
+              !hasData && (
                 <button
                   onClick={() => router.push("/")}
                   className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
                 >
                   Go to Upload
                 </button>
-              ) : null
+              )
             }
           />
         )}
@@ -232,11 +231,8 @@ export default function RevisedPolicyPage() {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
-                  Revised Output
+                  Revised Policy
                 </h2>
-                <p className="text-sm text-slate-400 font-medium tracking-wide">
-                  AI-Generated Policy Stream
-                </p>
               </div>
             </div>
           }

@@ -128,7 +128,7 @@ export default function RoadmapPage() {
   }, [handleGenerateRoadmap, hasData]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f5f6fa] font-sans selection:bg-blue-100 selection:text-blue-900">
+    <div className="flex flex-col min-h-screen bg-[#f5f6fa]">
       <AppTopBar
         section="Roadmap Planner"
         actions={

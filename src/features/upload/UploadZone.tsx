@@ -127,7 +127,7 @@ export function UploadZone({ onSuccess }: UploadProps) {
         // Ensure successful processing triggers navigation without tab update
         localStorage.setItem("uploadedDomains", JSON.stringify(uploadRes.data));
         onSuccess(uploadRes.data);
-        router.push("/results");
+        router.push("/analysis");
       }, 900);
     } catch (err: unknown) {
       if (logTimer) clearInterval(logTimer);

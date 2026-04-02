@@ -14,15 +14,16 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center shadow-md shadow-blue-500/20">
           <CheckCircle2 className="w-5 h-5 text-white" />
         </div>
-        <Link className="font-extrabold text-slate-900 tracking-tight text-lg" href="/">
+        <Link
+          className="font-extrabold text-slate-900 tracking-tight text-lg"
+          href="/"
+        >
           Policy<span className="text-blue-600">Guard</span>
         </Link>
         {section && <span className="text-slate-300 mx-2">/</span>}
         <span className="text-slate-500 font-semibold text-sm">{section}</span>
       </div>
-      {actions ? (
-        <div className="flex items-center gap-4">{actions}</div>
-      ) : null}
+      {actions && <div className="flex items-center gap-4">{actions}</div>}
     </header>
   );
 }
