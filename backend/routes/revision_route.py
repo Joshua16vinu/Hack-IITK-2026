@@ -1,12 +1,11 @@
 import json
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from helpers.llm_helper import stream_llm
 from helpers.logger import get_logger
 from prompts.policy_revision import REVISED_POLICY_PROMPT
-
-from pydantic import BaseModel
 
 class RevisionRequest(BaseModel):
     text: str

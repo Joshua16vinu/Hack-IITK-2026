@@ -64,7 +64,7 @@ def call_llm(prompt: str) -> Any:
     
     try: 
         return json.loads(generated_text) 
-    except (TypeError, json.JSONDecodeError) as e: 
+    except (TypeError, json.JSONDecodeError) as e:
         logger.warning("Failed to parse LLM output as JSON: %s", e) 
         return generated_text.strip()
     

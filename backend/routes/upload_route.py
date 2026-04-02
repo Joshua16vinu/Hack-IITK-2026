@@ -4,10 +4,10 @@ import json
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from typing import Optional
 
-from helpers.pdf_helper import extract_text_from_pdf
+from helpers.pdf_helper import extract_text_from_pdf, generate_file_id
 from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
-from constants import UPLOAD_FOLDER, CHUNKS_PER_BATCH
+from constants import UPLOAD_FOLDER
 from services.upload_service import batch_chunks, classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
 
 upload_router = APIRouter()
