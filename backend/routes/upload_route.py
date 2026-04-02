@@ -9,7 +9,6 @@ from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
 from constants import UPLOAD_FOLDER, CHUNKS_PER_BATCH
 from services.upload_service import batch_chunks, classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
-from services.storage_service import generate_file_id, result_exists, load_result, save_result
 
 upload_router = APIRouter()
 logger = get_logger(__name__)
@@ -64,13 +63,7 @@ async def upload_pdf(
             detail=json.dumps({"message": "PDF extraction failed", "error": str(e)})
         )
 
-    # Return cached result if available
-    if result_exists(file_id):
-        cached = load_result(file_id)
-        logger.info("Cache hit for file_id=%s", file_id)
-        return {"file_id": file_id, "cached": True, "result": cached, "extracted_text": text}
-
-    # Chunk text (single operation for both paths)
+    # Chunk text into sentences and then into chunks
     try:
         input_chunks = sentence_based_chunking(text)
         logger.info("Created %d chunks for file_id=%s", len(input_chunks), file_id)
@@ -113,9 +106,7 @@ async def upload_pdf(
             status_code=500,
             detail=json.dumps({"message": "Policy retrieval failed", "error": str(e)})
         )
-
-    # Persist and return result
-    save_result(file_id, domain_chunks_policies)
+        
     logger.info("Upload completed for file_id=%s", file_id)
 
     return {

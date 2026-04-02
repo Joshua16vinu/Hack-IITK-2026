@@ -4,7 +4,6 @@ BACKEND_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CHROMA_DB_PATH = os.path.join(BACKEND_BASE_DIR, "chroma_data")
 UPLOAD_FOLDER = os.path.join(BACKEND_BASE_DIR, "uploads")
 LOG_FOLDER = os.path.join(BACKEND_BASE_DIR, "logs")
-STORAGE_FOLDER = os.path.join(BACKEND_BASE_DIR, "storage")
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 
@@ -14,7 +13,7 @@ MODEL_NAME = "mistral"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDING_MODEL_PATH = os.path.join(BACKEND_BASE_DIR, "models", EMBEDDING_MODEL_NAME)
 
-CHUNKS_PER_BATCH = 4
+CHUNKS_PER_BATCH = 3
 
 MIN_CHUNK_SIZE = 150
 MAX_CHUNK_SIZE = 250

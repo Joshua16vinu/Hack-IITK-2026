@@ -23,7 +23,6 @@ Thumbs.db
 # Uploaded Files
 # ===============================
 backend/uploads/
-backend/storage/
 
 # ===============================
 # Local Models

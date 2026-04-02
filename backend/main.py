@@ -6,13 +6,12 @@ import time
 import os
 import uvicorn
 
-from constants import UPLOAD_FOLDER, STORAGE_FOLDER
+from constants import UPLOAD_FOLDER
 from helpers.logger import setup_logging, get_logger
 from routes.upload_route import upload_router
 from routes.gaps_route import gaps_router
 from routes.revision_route import revision_router
 from routes.roadmap_route import roadmap_router
-from routes.storage_route import storage_router
 
 
 setup_logging()
@@ -34,9 +33,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-    os.makedirs(STORAGE_FOLDER, exist_ok=True)
     logger.info("Backend startup complete. Upload folder ready at %s", UPLOAD_FOLDER)
-    logger.info("Storage folder ready at %s", STORAGE_FOLDER)
 
 @app.get('/')
 async def health_check():
@@ -59,7 +56,6 @@ app.include_router(upload_router, prefix='/api')
 app.include_router(gaps_router, prefix='/api')
 app.include_router(revision_router, prefix='/api')
 app.include_router(roadmap_router, prefix='/api')
-app.include_router(storage_router, prefix='/api')
 
 
 if __name__ == '__main__':
