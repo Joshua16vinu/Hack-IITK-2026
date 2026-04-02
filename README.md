@@ -18,7 +18,16 @@ A Next.js frontend and FastAPI backend system for Policy Analysis using LLMs.
 Please follow these steps in order to start the application.
 
 ### 1. Ollama Setup
-1. Download and install [Ollama](https://ollama.com/download).
+1. Download and install [Ollama](https://ollama.com/download):
+   ```bash
+   # macOS / Linux
+   curl -fsSL https://ollama.com/install.sh | sh
+   ```
+
+   ```powershell
+   # Windows PowerShell
+   irm https://ollama.com/install.ps1 | iex
+   ```
 2. Start the Ollama server:
    ```bash
    ollama serve
@@ -36,9 +45,12 @@ Please follow these steps in order to start the application.
 2. Create and activate a virtual environment:
    ```bash
    python -m venv venv
-   
+   ```
+   ```bash
    # On macOS/Linux:
    source venv/bin/activate
+   ```
+   ```bash
    # On Windows:
    venv\Scripts\activate
    ```
@@ -52,14 +64,7 @@ Please follow these steps in order to start the application.
    ```
    *This downloads `all-MiniLM-L6-v2` into `backend/models/` for embedding generation.*
 
-5. Start ChromaDB (in a separate terminal with venv activated):
-   ```bash
-   source venv/bin/activate  # Make sure venv is activated
-   chroma run --host 0.0.0.0 --port 8000 --path ./chroma_data
-   ```
-   *ChromaDB will now be running on `http://127.0.0.1:8000`.*
-
-6. Run ChromaDB ingestion to populate the database:
+5. Run ingestion to populate the local database:
    ```bash
    # Ingest NIST data
    python -m ingestion.ingest_nist
@@ -67,8 +72,9 @@ Please follow these steps in order to start the application.
    # Ingest domain-specific data
    python -m ingestion.ingest_domain_data
    ```
+   *ChromaDB is used as a local persistent store from `backend/chroma_data/`.*
 
-7. Start the FastAPI backend server (in the original backend terminal):
+6. Start the FastAPI backend server (in the original backend terminal):
    ```bash
    uvicorn main:app --port 5000 --reload
    ```
@@ -80,7 +86,9 @@ Please follow these steps in order to start the application.
    ```bash
    # macOS, Linux, and WSL
    curl -fsSL https://bun.sh/install | bash
+   ```
    
+   ```bash
    # Windows
    powershell -c "irm bun.sh/install.ps1|iex"
    ```

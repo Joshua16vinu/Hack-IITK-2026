@@ -1,6 +1,7 @@
 import os
 
 BACKEND_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CHROMA_DB_PATH = os.path.join(BACKEND_BASE_DIR, "chroma_data")
 UPLOAD_FOLDER = os.path.join(BACKEND_BASE_DIR, "uploads")
 LOG_FOLDER = os.path.join(BACKEND_BASE_DIR, "logs")
 STORAGE_FOLDER = os.path.join(BACKEND_BASE_DIR, "storage")
