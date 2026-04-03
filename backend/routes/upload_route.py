@@ -9,7 +9,6 @@ from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
 from constants import UPLOAD_FOLDER
 from services.upload_service import batch_chunks, classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
-import uuid
 
 upload_router = APIRouter()
 logger = get_logger(__name__)
