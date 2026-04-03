@@ -3,11 +3,12 @@ import subprocess
 import requests
 import time
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Iterable, Iterator, List, Optional
+from typing import Any, Iterator
 
 from constants import MODEL_NAME
 from helpers.logger import setup_logging, get_logger
+from helpers.response_formatter import extract_json, is_valid_gaps
+from prompts.response_format import REPAIR_LLM_RESPONSE
 
 
 setup_logging()
@@ -59,14 +60,28 @@ def call_llm(prompt: str) -> Any:
     body = response.json() 
     logger.debug("LLM raw response body: %s", body) 
     
-    generated_text = body.get("response", "") 
+    generated_text = body.get("response", "")
     logger.info("LLM response received") 
     
-    try: 
-        return json.loads(generated_text) 
-    except (TypeError, json.JSONDecodeError) as e:
-        logger.warning("Failed to parse LLM output as JSON: %s", e) 
-        return generated_text.strip()
+    try:
+        return json.loads(generated_text)
+    except json.JSONDecodeError:
+        try:
+            extracted = extract_json(generated_text)
+            if extracted:
+                try:
+                    parsed = json.loads(extracted)
+                    if is_valid_gaps(parsed):
+                        return parsed
+                except Exception:
+                    pass
+            
+            repaired = call_llm(REPAIR_LLM_RESPONSE.format(response=generated_text))
+            if repaired and is_valid_gaps(repaired):
+                return repaired
+        except Exception as e:
+            logger.warning("Failed to parse LLM output as JSON: %s", e) 
+            return generated_text.strip()
     
 
 def stream_llm(prompt: str) -> Iterator[str]:
@@ -98,33 +113,3 @@ def stream_llm(prompt: str) -> Iterator[str]:
     except Exception as e:
         logger.exception("stream_llm failed: %s", e)
         raise
-
-def call_llm_batch(
-    prompts: Iterable[str],
-    max_workers: int = 3,
-    return_exceptions: bool = False
-) -> List[Optional[str]]:
-    prompts_list = list(prompts)
-    if not prompts_list:
-        return []
-
-    max_workers = max(1, min(max_workers, len(prompts_list)))
-    results: List[Optional[str]] = [None] * len(prompts_list)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_index = {
-            executor.submit(call_llm, prompt): index
-            for index, prompt in enumerate(prompts_list)
-        }
-
-        for future in as_completed(future_to_index):
-            index = future_to_index[future]
-            try:
-                results[index] = future.result()
-            except Exception:
-                if return_exceptions:
-                    results[index] = None
-                else:
-                    raise
-
-    return results
