@@ -99,7 +99,6 @@ export const downloadTextAsPdf = ({ title, content, fileName }: PdfDownloadOptio
   type RGB = [number, number, number];
   const navy:    RGB = [10,  22,  50];
   const gold:    RGB = [180, 140, 60];
-  const blue:    RGB = [37,  97,  210];
   const blueLight: RGB = [200, 216, 248];
   const slate800: RGB = [30,  41,  59];
   const slate600: RGB = [71,  85,  105];
@@ -117,7 +116,7 @@ export const downloadTextAsPdf = ({ title, content, fileName }: PdfDownloadOptio
 
   let cursorY = HEADER_H + 8;
 
-  const drawHeader = (_pageTitle: string) => {
+  const drawHeader = () => {
     // thin navy top bar
     setFill(navy); doc.rect(0, 0, PW, 6, "F");
     // off-white header bg
@@ -146,7 +145,7 @@ export const downloadTextAsPdf = ({ title, content, fileName }: PdfDownloadOptio
   };
 
   const resetPage = () => {
-    drawHeader(title);
+    drawHeader();
     cursorY = HEADER_H + 18;
   };
 
@@ -158,8 +157,6 @@ export const downloadTextAsPdf = ({ title, content, fileName }: PdfDownloadOptio
   // ════════════════════════════════════════════════════════════════════════
   //  COVER PAGE — Premium Consulting Style
   // ════════════════════════════════════════════════════════════════════════
-  const cX = PW / 2;
-
   // ── full navy background ────────────────────────────────────────────────
   setFill(navy); doc.rect(0, 0, PW, PH, "F");
 

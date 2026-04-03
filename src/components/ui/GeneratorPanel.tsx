@@ -1,4 +1,3 @@
-import { ReactNode } from "react";
 import type { GeneratorPanelProps } from "@/types";
 
 export function GeneratorPanel({

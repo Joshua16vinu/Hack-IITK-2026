@@ -1,4 +1,3 @@
-import { ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
 import type { ErrorBannerProps } from "@/types";
 

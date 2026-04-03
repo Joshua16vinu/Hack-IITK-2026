@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ToastVariant = "info" | "success" | "warning" | "error";
+type ToastVariant = "info" | "success" | "warning" | "error";
 
-export type ToastInput =
+type ToastInput =
   | string
   | {
       title: string;
@@ -136,9 +136,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach((timer) => clearTimeout(timer));
-      timersRef.current.clear();
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
     };
   }, []);
 

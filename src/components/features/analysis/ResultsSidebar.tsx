@@ -1,5 +1,4 @@
 import { Loader2, BookOpen, ShieldCheck } from "lucide-react";
-import { DomainEntry, GapResult } from "@/types";
 import { getMeta } from "@/data/domainStyles";
 import { cn } from "@/lib/utils";
 import type { ResultsSidebarProps } from "@/types";

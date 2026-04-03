@@ -37,10 +37,10 @@ export default function RevisedPolicyPage() {
   const contentEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (contentEndRef.current && streamedText) {
+    if (contentEndRef.current && streamedText && loading) {
       contentEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [streamedText]);
+  }, [loading, streamedText]);
 
   useEffect(() => {
     const fileId = localStorage.getItem("fileId");
