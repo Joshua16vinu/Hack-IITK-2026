@@ -9,6 +9,7 @@ from helpers.chunking_helper import sentence_based_chunking
 from helpers.logger import get_logger
 from constants import UPLOAD_FOLDER
 from services.upload_service import batch_chunks, classify_pdf_chunk, restructure_chunks_by_domain, get_domain_chunks_with_policies
+import uuid
 
 upload_router = APIRouter()
 logger = get_logger(__name__)
@@ -44,7 +45,7 @@ async def upload_pdf(
         logger.exception("Failed to read uploaded file")
         raise HTTPException(status_code=500, detail="Failed to read file")
 
-    file_id = generate_file_id(contents, domain)
+    file_id = str(uuid.uuid4())
     logger.info("Processing file_id=%s domain=%s", file_id, domain or "auto")
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
