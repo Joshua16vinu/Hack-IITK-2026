@@ -1,12 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-
-interface StreamingTextProps {
-  text: string;
-  id: string;
-  speed?: number;
-  start?: boolean;
-  onComplete?: () => void;
-}
+import type { StreamingTextProps, StreamingTextRunnerProps } from "@/types";
 
 export function StreamingText({
   text,
@@ -37,16 +30,6 @@ export function StreamingText({
     />
   );
 }
-
-interface StreamingTextRunnerProps {
-  text: string;
-  speed: number;
-  start: boolean;
-  onComplete?: () => void;
-  isCached: boolean;
-  storageKey: string;
-}
-
 function StreamingTextRunner({
   text,
   speed,

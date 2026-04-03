@@ -18,11 +18,8 @@ import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
-
-interface GapCacheResult {
-  domain: string;
-  gaps?: string[];
-}
+import { generateRevisedPolicy } from "@/services/api";
+import type { GapCacheResult } from "@/types";
 
 export default function RevisedPolicyPage() {
   const router = useRouter();
@@ -108,31 +105,19 @@ export default function RevisedPolicyPage() {
     setErrorText(null);
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/revised-policy",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: extractedText,
-            gap_analysis: combinedGaps,
-          }),
-        },
-      );
+      const response = await generateRevisedPolicy({
+        text: extractedText,
+        gapAnalysis: combinedGaps,
+      });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-
-      if (!response.body) {
+      const body = response.body;
+      if (!body) {
         throw new Error(
           "ReadableStream not supported by browser or empty response",
         );
       }
 
-      const reader = response.body.getReader();
+      const reader = body.getReader();
       const decoder = new TextDecoder();
       let done = false;
       let fullText = "";
@@ -157,13 +142,9 @@ export default function RevisedPolicyPage() {
       if (fileId) {
         localStorage.setItem(`revisedPolicy:${fileId}`, fullText);
       }
-    } catch (err: unknown) {
-      console.error("Streaming error:", err);
-      setErrorText(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while generating the revised policy.",
-      );
+    } catch {
+      console.error("Streaming error:");
+      setErrorText("An error occurred while generating the revised policy.");
       setToast({
         title: "Policy Generation Failed",
         message: "An error occurred while generating the revised policy.",

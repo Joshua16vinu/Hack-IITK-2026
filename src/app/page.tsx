@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { HomeHeroPanel } from "@/components/features/home/HomeHeroPanel";
 import { HomeUploadPanel } from "@/components/features/home/HomeUploadPanel";
+import type { UploadResult } from "@/types";
 
 export default function EnterpriseDashboard() {
-
   useEffect(() => {
     const cached = localStorage.getItem("uploadedDomains");
     if (cached) {
@@ -21,20 +21,10 @@ export default function EnterpriseDashboard() {
     }
   }, []);
 
-  const handleUploadSuccess = (data: unknown) => {
-    const uploadData = data as {
-      result?: unknown[];
-      extracted_text?: string;
-      file_id?: string;
-    };
-    const domains = Array.isArray(data) ? data : (uploadData?.result ?? []);
-    localStorage.setItem("uploadedDomains", JSON.stringify(domains));
-    if (uploadData?.extracted_text) {
-      localStorage.setItem("extractedText", uploadData.extracted_text);
-    }
-    if (uploadData?.file_id) {
-      localStorage.setItem("fileId", uploadData.file_id);
-    }
+  const handleUploadSuccess = (data: UploadResult) => {
+    localStorage.setItem("uploadedDomains", JSON.stringify(data.result));
+    localStorage.setItem("extractedText", data.extracted_text);
+    localStorage.setItem("fileId", data.file_id);
   };
 
   return (

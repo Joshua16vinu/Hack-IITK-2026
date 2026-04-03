@@ -1,24 +1,15 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Logo from "@/app/logo.svg"
-
-interface AppTopBarProps {
-  section?: string;
-  actions?: ReactNode;
-}
+import Logo from "@/app/logo.svg";
+import type { AppTopBarProps } from "@/types";
 
 export function AppTopBar({ section, actions }: AppTopBarProps) {
   return (
     <header className="shrink-0 h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm z-50 px-6 flex items-center justify-between sticky top-0">
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 flex items-center justify-center">
-          <Image
-            src={Logo}
-            alt="PolicyGuard Logo"
-            height={32}
-            width={32}
-          />
+          <Image src={Logo} alt="PolicyGuard Logo" height={32} width={32} />
         </div>
         <Link
           className="font-extrabold text-slate-900 tracking-tight text-lg"

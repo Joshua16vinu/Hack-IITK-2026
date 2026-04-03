@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
+import { generateRoadmap } from "@/services/api";
 
 export default function RoadmapPage() {
   const router = useRouter();
@@ -67,28 +68,19 @@ export default function RoadmapPage() {
     setErrorText(null);
 
     try {
-      const response = await fetch("http://localhost:5000/api/get-roadmap", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          input_policy: inputPolicy,
-          revised_policy: revisedPolicy,
-        }),
+      const response = await generateRoadmap({
+        inputPolicy,
+        revisedPolicy,
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
-      }
-
-      if (!response.body) {
+      const body = response.body;
+      if (!body) {
         throw new Error(
           "ReadableStream not supported by browser or empty response",
         );
       }
 
-      const reader = response.body.getReader();
+      const reader = body.getReader();
       const decoder = new TextDecoder();
       let done = false;
       let fullText = "";
@@ -113,13 +105,9 @@ export default function RoadmapPage() {
       if (fileId) {
         localStorage.setItem(`roadmap:${fileId}`, fullText);
       }
-    } catch (err: unknown) {
-      console.error("Streaming error:", err);
-      setErrorText(
-        err instanceof Error
-          ? err.message
-          : "An error occurred while generating the roadmap.",
-      );
+    } catch {
+      console.error("Streaming error:");
+      setErrorText("An error occurred while generating the roadmap.");
       setToast({
         title: "Roadmap Generation Failed",
         message: "An error occurred while generating the roadmap.",

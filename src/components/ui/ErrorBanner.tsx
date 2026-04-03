@@ -1,10 +1,6 @@
 import { ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
-
-interface ErrorBannerProps {
-  message: string;
-  action?: ReactNode;
-}
+import type { ErrorBannerProps } from "@/types";
 
 export function ErrorBanner({ message, action }: ErrorBannerProps) {
   return (

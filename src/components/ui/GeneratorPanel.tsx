@@ -1,10 +1,5 @@
 import { ReactNode } from "react";
-
-interface GeneratorPanelProps {
-  header: ReactNode;
-  action: ReactNode;
-  children: ReactNode;
-}
+import type { GeneratorPanelProps } from "@/types";
 
 export function GeneratorPanel({
   header,

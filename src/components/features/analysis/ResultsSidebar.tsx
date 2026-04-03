@@ -1,15 +1,8 @@
 import { Loader2, BookOpen, ShieldCheck } from "lucide-react";
-import { DomainEntry, GapResult } from "./types";
+import { DomainEntry, GapResult } from "@/types";
 import { getMeta } from "@/data/domainStyles";
 import { cn } from "@/lib/utils";
-
-interface ResultsSidebarProps {
-  domains: DomainEntry[];
-  activeDomainIdx: number;
-  onSelectDomain: (index: number) => void;
-  totalNist: number;
-  getDomainGapData: (domainName: string) => GapResult | undefined;
-}
+import type { ResultsSidebarProps } from "@/types";
 
 export function ResultsSidebar({
   domains,

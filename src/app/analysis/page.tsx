@@ -3,23 +3,20 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
-import axios from "axios";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { useToast } from "@/components/ui/Toast";
 import { ResultsSidebar } from "@/components/features/analysis/ResultsSidebar";
 import { ResultsDomainDetails } from "@/components/features/analysis/ResultsDomainDetails";
 import { downloadTextAsPdf } from "@/lib/pdf";
-import {
-  DomainEntry,
-  GapAnalysisCache,
-  GapResult,
-} from "@/components/features/analysis/types";
+import { getGapAnalysisStatus, startGapAnalysis } from "@/services/api";
+import { DomainEntry, GapAnalysisCache, GapResult } from "@/types";
 
 const GAP_CACHE_PREFIX = "gapAnalysis:";
 
 const getGapCacheKey = (fileId: string) => `${GAP_CACHE_PREFIX}${fileId}`;
 
-const normalizeDomainName = (domainName: string) => domainName.trim().toLowerCase();
+const normalizeDomainName = (domainName: string) =>
+  domainName.trim().toLowerCase();
 
 const readGapAnalysisCache = (fileId: string): GapAnalysisCache | null => {
   if (typeof window === "undefined") return null;
@@ -142,32 +139,26 @@ export default function ResultsPage() {
     return () => cancelAnimationFrame(rafId);
   }, []);
 
-  const startGapAnalysis = useCallback(
+  const runGapAnalysis = useCallback(
     async (domainData: DomainEntry[], fileId: string) => {
       try {
         updateAnalyzing(true);
-        const startRes = await axios.post(
-          "http://localhost:5000/api/analyze-gaps",
-          domainData,
-        );
+        const startRes = await startGapAnalysis({ domainData });
 
-        const currentResults = Array.isArray(startRes.data)
-          ? startRes.data
-          : Array.isArray(startRes.data?.results)
-            ? startRes.data.results
-            : [];
+        const currentResults = Array.isArray(startRes.results)
+          ? startRes.results
+          : [];
 
         const currentStatus: GapResult["status"] =
-          startRes.data?.status === "completed" ||
-          startRes.data?.status === "failed"
-            ? startRes.data.status
+          startRes.status === "completed" || startRes.status === "failed"
+            ? startRes.status
             : "processing";
 
         if (currentResults.length > 0) {
           syncGapState(fileId, {
             status: currentStatus,
             results: currentResults,
-            message: startRes.data?.message,
+            message: startRes.message,
           });
         } else {
           const cached = readGapAnalysisCache(fileId);
@@ -180,7 +171,7 @@ export default function ResultsPage() {
 
           writeGapAnalysisCache(fileId, {
             status: currentStatus,
-            message: startRes.data?.message,
+            message: startRes.message,
           });
         }
 
@@ -201,30 +192,27 @@ export default function ResultsPage() {
         stopPolling();
         pollIntervalRef.current = setInterval(async () => {
           try {
-            const statusRes = await axios.get(
-              "http://localhost:5000/api/analyze-gaps",
-            );
+            const statusRes = await getGapAnalysisStatus();
 
-            const polledResults = Array.isArray(statusRes.data?.results)
-              ? statusRes.data.results
+            const polledResults = Array.isArray(statusRes.results)
+              ? statusRes.results
               : undefined;
 
             const polledStatus: GapResult["status"] =
-              statusRes.data?.status === "completed" ||
-              statusRes.data?.status === "failed"
-                ? statusRes.data.status
+              statusRes.status === "completed" || statusRes.status === "failed"
+                ? statusRes.status
                 : "processing";
 
             if (polledResults) {
               syncGapState(fileId, {
                 status: polledStatus,
                 results: polledResults,
-                message: statusRes.data?.message,
+                message: statusRes.message,
               });
             } else {
               writeGapAnalysisCache(fileId, {
                 status: polledStatus,
-                message: statusRes.data?.message,
+                message: statusRes.message,
               });
               updateAnalyzing(polledStatus === "processing");
             }
@@ -286,7 +274,7 @@ export default function ResultsPage() {
     }
 
     queueMicrotask(() => {
-      void startGapAnalysis(domains, fileId);
+      void runGapAnalysis(domains, fileId);
     });
 
     return () => {
@@ -296,7 +284,7 @@ export default function ResultsPage() {
     isHydrated,
     router,
     domains,
-    startGapAnalysis,
+    runGapAnalysis,
     updateAnalyzing,
     updateGapResults,
     setToast,
@@ -308,7 +296,10 @@ export default function ResultsPage() {
       {
         domain: string;
         text: string[];
-        relatedNistById: Map<string, DomainEntry["related_nist_policies"][number]>;
+        relatedNistById: Map<
+          string,
+          DomainEntry["related_nist_policies"][number]
+        >;
       }
     >();
 
@@ -402,9 +393,7 @@ export default function ResultsPage() {
         hasCompleted: result.status === "completed",
         hasFailed: result.status === "failed",
         gaps: new Set(
-          Array.isArray(result.gaps)
-            ? result.gaps.filter(Boolean)
-            : []
+          Array.isArray(result.gaps) ? result.gaps.filter(Boolean) : [],
         ),
       });
     }
@@ -433,7 +422,8 @@ export default function ResultsPage() {
   );
 
   const getDomainGapData = useCallback(
-    (domainName: string) => domainWiseGapMap.get(normalizeDomainName(domainName)),
+    (domainName: string) =>
+      domainWiseGapMap.get(normalizeDomainName(domainName)),
     [domainWiseGapMap],
   );
 
@@ -445,7 +435,10 @@ export default function ResultsPage() {
     );
   }
 
-  const safeActiveDomainIdx = Math.min(activeDomainIdx, domainWiseDomains.length - 1);
+  const safeActiveDomainIdx = Math.min(
+    activeDomainIdx,
+    domainWiseDomains.length - 1,
+  );
   const activeDomain = domainWiseDomains[safeActiveDomainIdx];
   const activeNist = activeDomain.related_nist_policies?.length || 0;
   const totalNist = domainWiseDomains.reduce(
@@ -502,7 +495,12 @@ export default function ResultsPage() {
 
             <button
               onClick={() => router.push("/revised-policy")}
-              disabled={analyzing || domainWiseGapResults.some((result) => result.status === "processing")}
+              disabled={
+                analyzing ||
+                domainWiseGapResults.some(
+                  (result) => result.status === "processing",
+                )
+              }
               className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Generate Revised Policy

@@ -7,15 +7,9 @@ import {
   FileText,
   ShieldCheck,
 } from "lucide-react";
-import { DomainEntry, GapResult } from "./types";
+import { DomainEntry, GapResult } from "@/types";
 import { StreamingText } from "./StreamingText";
-
-interface ResultsDomainDetailsProps {
-  domain: DomainEntry;
-  activeDomainIdx: number;
-  activeNist: number;
-  activeGapData?: GapResult;
-}
+import type { ResultsDomainDetailsProps } from "@/types";
 
 export function ResultsDomainDetails({
   domain,
@@ -115,68 +109,66 @@ export function ResultsDomainDetails({
             </div>
           </div>
 
-          {activeGapData?.gaps &&
-            activeGapData.gaps.length > 0 && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                      <AlertCircle className="w-4 h-4 text-red-600" />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                      Identified Gaps
-                    </h2>
+          {activeGapData?.gaps && activeGapData.gaps.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
                   </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="group relative bg-white rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-md transition-all duration-300"
-                  >
-                    {activeGapData.status === "processing" && (
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-4">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Policy is still being analyzed...
-                      </div>
-                    )}
-                    {activeGapData.gaps.map((gap, gapIndex) => {
-                      const gapId = `gap_${domain.domain}_${gapIndex}`;
-
-                      const isAlreadyCompleted =
-                        completedGapIds.includes(gapId);
-
-                      const isActiveNow =
-                        activeGapStreamIndex === -1
-                          ? false
-                          : gapIndex === activeGapStreamIndex;
-
-                      if (!isActiveNow && !isAlreadyCompleted) return null;
-
-                      return (
-                        <div
-                          className="flex items-start gap-4 relative z-10"
-                          key={`${domain.domain}-${gapIndex}`}
-                        >
-                          <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
-
-                          <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
-                            <StreamingText
-                              text={gap}
-                              id={gapId}
-                              speed={100}
-                              start={isAlreadyCompleted || isActiveNow}
-                              onComplete={() => handleGapStreamComplete(gapId)}
-                            />
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </motion.div>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                    Identified Gaps
+                  </h2>
                 </div>
               </div>
-            )}
+              <div className="grid grid-cols-1 gap-4">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="group relative bg-white rounded-2xl p-6 border border-red-100 shadow-sm hover:shadow-md transition-all duration-300"
+                >
+                  {activeGapData.status === "processing" && (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-4">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Policy is still being analyzed...
+                    </div>
+                  )}
+                  {activeGapData.gaps.map((gap, gapIndex) => {
+                    const gapId = `gap_${domain.domain}_${gapIndex}`;
+
+                    const isAlreadyCompleted = completedGapIds.includes(gapId);
+
+                    const isActiveNow =
+                      activeGapStreamIndex === -1
+                        ? false
+                        : gapIndex === activeGapStreamIndex;
+
+                    if (!isActiveNow && !isAlreadyCompleted) return null;
+
+                    return (
+                      <div
+                        className="flex items-start gap-4 relative z-10"
+                        key={`${domain.domain}-${gapIndex}`}
+                      >
+                        <div className="w-2.5 h-2.5 mt-2 shrink-0 rounded-full bg-red-400" />
+
+                        <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium">
+                          <StreamingText
+                            text={gap}
+                            id={gapId}
+                            speed={100}
+                            start={isAlreadyCompleted || isActiveNow}
+                            onComplete={() => handleGapStreamComplete(gapId)}
+                          />
+                        </p>
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              </div>
+            </div>
+          )}
 
           {activeNist > 0 ? (
             <div className="space-y-6">

@@ -1,10 +1,5 @@
 import { jsPDF } from "jspdf";
-
-interface PdfDownloadOptions {
-  title: string;
-  content: string;
-  fileName: string;
-}
+import type { PdfDownloadOptions } from "@/types";
 
 type ParagraphBlock = { type: "paragraph"; text: string };
 type HeadingBlock   = { type: "heading";   level: number; text: string };

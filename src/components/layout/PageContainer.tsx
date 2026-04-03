@@ -1,9 +1,5 @@
 import { ReactNode } from "react";
-
-interface PageContainerProps {
-  children: ReactNode;
-  className?: string;
-}
+import type { PageContainerProps } from "@/types";
 
 export function PageContainer({
   children,

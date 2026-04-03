@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import { motion } from "framer-motion";
 import {
   UploadCloud,
@@ -15,19 +14,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
-
-interface UploadResult {
-  domain?: string;
-  subdomain?: string;
-  gap_analysis?: unknown;
-  revised_policy?: unknown;
-  implementation_roadmap?: unknown;
-  nist_records_used?: unknown[];
-}
-
-interface UploadProps {
-  onSuccess: (data: UploadResult) => void;
-}
+import { uploadPdf } from "@/services/api";
+import type { UploadProps } from "@/types";
 
 const DOMAINS = [
   {
@@ -105,22 +93,13 @@ export function UploadZone({ onSuccess }: UploadProps) {
     setStatus("uploading");
     setProgress(0);
     setLogIndex(0);
-    const formData = new FormData();
-    formData.append("file", f);
-    if (selectedDomain) formData.append("domain", selectedDomain);
 
     let logTimer: ReturnType<typeof setInterval> | undefined;
     try {
-      const uploadRes = await axios.post<UploadResult>(
-        "http://localhost:5000/api/upload-pdf",
-        formData,
-        {
-          onUploadProgress: (p) =>
-            setProgress(
-              Math.min(Math.round((p.loaded * 100) / (p.total || 1)), 30),
-            ),
-        },
-      );
+      const uploadRes = await uploadPdf({
+        file: f,
+        domain: selectedDomain || undefined,
+      });
       setStatus("processing");
       setProgress(35);
       let i = 0;
@@ -142,19 +121,14 @@ export function UploadZone({ onSuccess }: UploadProps) {
 
       setTimeout(() => {
         // Ensure successful processing triggers navigation without tab update
-        localStorage.setItem("uploadedDomains", JSON.stringify(uploadRes.data));
-        onSuccess(uploadRes.data);
+        localStorage.setItem("uploadedDomains", JSON.stringify(uploadRes));
+        onSuccess(uploadRes);
         router.push("/analysis");
       }, 900);
-    } catch (err: unknown) {
+    } catch {
       if (logTimer) clearInterval(logTimer);
       setStatus("error");
-      const detail = axios.isAxiosError(err) ? err.response?.data : undefined;
-      const message =
-        detail && typeof detail === "object"
-          ? (detail as { detail?: unknown }).detail
-          : undefined;
-      const finalMessage = typeof message === "string" ? message : "Upload failed.";
+      const finalMessage = "Upload failed.";
       setErrorMsg(finalMessage);
       setToast({
         title: "Upload failed",

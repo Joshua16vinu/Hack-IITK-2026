@@ -1,8 +1,5 @@
 import { UploadZone } from "@/features/upload/UploadZone";
-
-interface HomeUploadPanelProps {
-  onSuccess: (data: unknown) => void;
-}
+import type { HomeUploadPanelProps } from "@/types";
 
 export function HomeUploadPanel({ onSuccess }: HomeUploadPanelProps) {
   return (
