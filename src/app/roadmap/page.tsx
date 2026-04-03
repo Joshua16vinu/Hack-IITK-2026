@@ -190,14 +190,14 @@ export default function RoadmapPage() {
           <ErrorBanner
             message={errorText}
             action={
-              !hasData ? (
+              !hasData && (
                 <button
                   onClick={() => router.push("/revised-policy")}
                   className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
                 >
                   Go back
                 </button>
-              ) : null
+              )
             }
           />
         )}
