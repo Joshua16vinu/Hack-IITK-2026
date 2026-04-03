@@ -69,13 +69,11 @@ def call_llm(prompt: str) -> Any:
         logger.warning("Failed to parse LLM output as JSON: %s. Retrying now...", e)
         try:
             extracted = extract_json(generated_text)
-            if extracted:
-                try:
-                    parsed = json.loads(extracted)
-                    if is_valid_gaps(parsed):
-                        return parsed
-                except Exception:
-                    pass
+            try:
+                return json.loads(extracted)
+            except Exception:
+                if is_valid_gaps(extracted):
+                    return extracted
             
             logger.info("Attempting to repair LLM response and parse again")
             repaired = repair_llm_response(generated_text)

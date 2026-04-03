@@ -139,7 +139,7 @@ export function UploadZone({ onSuccess }: UploadProps) {
   };
 
   return (
-    <div className="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xl relative">
+    <div className="w-full bg-white border border-slate-200 rounded-3xl overflow-visible shadow-xl relative">
       <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-3">

@@ -9,9 +9,10 @@ IMPORTANT:
 - Focus only on identifying specific gaps in the policy content
 - Do not rewrite, summarize, or modify the policy
 - Do not reference or name any NIST controls
-- Do not output JSON instead just give a array of gaps no other text content
-- Output only a clear, concise array of gaps
-- Each gap must be 1-2 sentences, strictly 3-5 gaps only.
+- Output only valid JSON
+- Return only a JSON array of strings with no markdown, no bullets, and no extra text
+- Output STRICTLY valid JSON: a list of strings (array), with no explanation or extra text
+- Each gap must be 1-2 sentences, STRICTLY 3-5 gaps only, and STRICTLY not more than 5 gaps.
 - Avoid vague statements; each gap must describe a specific missing capability, process, or requirement
 - Use formal, professional language
 
@@ -21,6 +22,12 @@ INPUT POLICY:
 RELATED NIST POLICIES:
 {related_nist_policies}
 
+STRICT REQUIREMENTS:
+- Output MUST be valid JSON
+- Output MUST start with [ and end with ]
+- Do not include any text before or after the JSON
+- Do not include explanations, headers, or formatting
+
 OUTPUT:
-Return a clear, concise array of identified gaps in the policy.
+Return only a valid JSON array of identified policy gaps.
 """
