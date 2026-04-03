@@ -77,7 +77,7 @@ async def upload_pdf(
     # Process chunks based on domain specification
     try:
         if domain:
-            # Manual domain: batch chunks into groups
+            # Manual mode: batch chunks into groups for the specified domain
             batches = batch_chunks(input_chunks)
             domain_wise_chunks = [
                 {"domain": domain, "text": batch}

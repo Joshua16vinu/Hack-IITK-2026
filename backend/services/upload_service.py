@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from collections import defaultdict
 
-from constants import DOMAIN_DATA_PATH, KB_COLLECTION, NIST_COLLECTION, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, DOMAIN_GAP_THRESHOLD, CHUNKS_PER_BATCH
+from constants import DOMAIN_DATA_PATH, KB_COLLECTION, NIST_COLLECTION, NIST_PER_CHUNK, SEMANTIC_WEIGHT, KEYWORD_WEIGHT, DOMAIN_GAP_THRESHOLD, CHUNKS_PER_BATCH
 from helpers.chroma_helper import get_chroma_client
 from helpers.embedding_helper import load_embedding_model
 
@@ -91,7 +91,8 @@ def restructure_chunks_by_domain(classified_chunks: list[dict]) -> list[dict]:
         for domain in item["domains"]:
             domain_text_map.setdefault(domain, []).append(item["chunk"])
 
-    return [{"domain": domain, "text": texts, "related_nist_policies": []} for domain, texts in domain_text_map.items()]
+    # Only include domains that have enough chunks to form a batch
+    return [{"domain": domain, "text": texts, "related_nist_policies": []} for domain, texts in domain_text_map.items() if len(texts) >= CHUNKS_PER_BATCH]
 
 
 # -------------------------------- Get domain chunks with policies --------------------------------
@@ -101,7 +102,7 @@ def get_domain_chunks_with_policies(domain_chunks: list[dict]) -> list[dict]:
 
         results = _nist_collection.query(
             query_embeddings=chunk_embeddings,
-            n_results=3,
+            n_results=NIST_PER_CHUNK,
             include=["documents"],
             where={"domain": item["domain"]}
         )
