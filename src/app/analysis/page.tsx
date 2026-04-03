@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import axios from "axios";
 import { AppTopBar } from "@/components/layout/AppTopBar";
+import { useToast } from "@/components/ui/Toast";
 import { ResultsSidebar } from "@/components/features/analysis/ResultsSidebar";
 import { ResultsDomainDetails } from "@/components/features/analysis/ResultsDomainDetails";
 import { downloadTextAsPdf } from "@/lib/pdf";
@@ -80,6 +81,7 @@ const getCachedDomains = (): DomainEntry[] => {
 
 export default function ResultsPage() {
   const router = useRouter();
+  const { setToast } = useToast();
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeDomainIdx, setActiveDomainIdx] = useState<number>(0);
@@ -145,7 +147,7 @@ export default function ResultsPage() {
       try {
         updateAnalyzing(true);
         const startRes = await axios.post(
-          "http://127.0.0.1:5000/api/analyze-gaps",
+          "http://localhost:5000/api/analyze-gaps",
           domainData,
         );
 
@@ -200,7 +202,7 @@ export default function ResultsPage() {
         pollIntervalRef.current = setInterval(async () => {
           try {
             const statusRes = await axios.get(
-              "http://127.0.0.1:5000/api/analyze-gaps",
+              "http://localhost:5000/api/analyze-gaps",
             );
 
             const polledResults = Array.isArray(statusRes.data?.results)
@@ -230,11 +232,21 @@ export default function ResultsPage() {
             if (polledStatus === "completed" || polledStatus === "failed") {
               stopPolling();
               updateAnalyzing(false);
+              setToast({
+                title: "Gap Analysis Complete",
+                message: "The gap analysis has been completed.",
+                variant: "success",
+              });
             }
           } catch (error) {
             console.error("Polling error:", error);
             stopPolling();
             updateAnalyzing(false);
+            setToast({
+              title: "Gap Analysis Failed",
+              message: "An error occurred while analyzing gaps.",
+              variant: "error",
+            });
           }
         }, 15000);
       } catch (error) {
@@ -242,7 +254,7 @@ export default function ResultsPage() {
         updateAnalyzing(false);
       }
     },
-    [syncGapState, updateAnalyzing, updateGapResults],
+    [syncGapState, updateAnalyzing, updateGapResults, setToast],
   );
 
   useEffect(() => {
@@ -287,6 +299,7 @@ export default function ResultsPage() {
     startGapAnalysis,
     updateAnalyzing,
     updateGapResults,
+    setToast,
   ]);
 
   const domainWiseDomains = useMemo(() => {
@@ -489,7 +502,7 @@ export default function ResultsPage() {
 
             <button
               onClick={() => router.push("/revised-policy")}
-              disabled={analyzing}
+              disabled={analyzing || domainWiseGapResults.some((result) => result.status === "processing")}
               className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-blue-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Generate Revised Policy

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
@@ -29,6 +30,7 @@ export default function RevisedPolicyPage() {
   const [loading, setLoading] = useState(false);
   const [streamedText, setStreamedText] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
+  const { setToast } = useToast();
 
   const [hasData, setHasData] = useState(false);
   const autoStartRef = useRef(false);
@@ -106,16 +108,19 @@ export default function RevisedPolicyPage() {
     setErrorText(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/revised-policy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "http://localhost:5000/api/revised-policy",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: extractedText,
+            gap_analysis: combinedGaps,
+          }),
         },
-        body: JSON.stringify({
-          text: extractedText,
-          gap_analysis: combinedGaps,
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`API error: ${response.status} ${response.statusText}`);
@@ -142,6 +147,12 @@ export default function RevisedPolicyPage() {
         }
       }
 
+      setToast({
+        title: "Policy Generated",
+        message: "The revised policy has been successfully generated.",
+        variant: "success",
+      });
+
       const fileId = localStorage.getItem("fileId");
       if (fileId) {
         localStorage.setItem(`revisedPolicy:${fileId}`, fullText);
@@ -153,10 +164,15 @@ export default function RevisedPolicyPage() {
           ? err.message
           : "An error occurred while generating the revised policy.",
       );
+      setToast({
+        title: "Policy Generation Failed",
+        message: "An error occurred while generating the revised policy.",
+        variant: "error",
+      });
     } finally {
       setLoading(false);
     }
-  }, [combinedGaps, extractedText, hasData]);
+  }, [combinedGaps, extractedText, hasData, setToast]);
 
   useEffect(() => {
     if (hasData && !autoStartRef.current) {

@@ -14,6 +14,7 @@ import {
   Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 interface UploadResult {
   domain?: string;
@@ -62,6 +63,7 @@ const PROCESSING_LOGS = [
 
 export function UploadZone({ onSuccess }: UploadProps) {
   const router = useRouter();
+  const { setToast } = useToast();
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const [isDomainOpen, setIsDomainOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -79,11 +81,21 @@ export function UploadZone({ onSuccess }: UploadProps) {
     if (f.type !== "application/pdf") {
       setStatus("error");
       setErrorMsg("Invalid file format. Please upload a PDF document.");
+      setToast({
+        title: "Invalid file",
+        message: "Please upload a PDF document.",
+        variant: "warning",
+      });
       return;
     }
     if (f.size > 10 * 1024 * 1024) {
       setStatus("error");
       setErrorMsg("File exceeds 10MB limit. Please upload a smaller file.");
+      setToast({
+        title: "File too large",
+        message: "Please upload a PDF smaller than 10MB.",
+        variant: "warning",
+      });
       return;
     }
     upload(f);
@@ -122,6 +134,11 @@ export function UploadZone({ onSuccess }: UploadProps) {
       clearInterval(logTimer);
       setProgress(100);
       setStatus("success");
+      setToast({
+        title: "Upload complete",
+        message: "The document was processed successfully.",
+        variant: "success",
+      });
 
       setTimeout(() => {
         // Ensure successful processing triggers navigation without tab update
@@ -137,7 +154,13 @@ export function UploadZone({ onSuccess }: UploadProps) {
         detail && typeof detail === "object"
           ? (detail as { detail?: unknown }).detail
           : undefined;
-      setErrorMsg(typeof message === "string" ? message : "Upload failed.");
+      const finalMessage = typeof message === "string" ? message : "Upload failed.";
+      setErrorMsg(finalMessage);
+      setToast({
+        title: "Upload failed",
+        message: finalMessage,
+        variant: "error",
+      });
     }
   };
 

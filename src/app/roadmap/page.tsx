@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { PageContainer } from "@/components/layout/PageContainer";
+import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
@@ -22,7 +23,7 @@ export default function RoadmapPage() {
   const [loading, setLoading] = useState(false);
   const [streamedText, setStreamedText] = useState("");
   const [errorText, setErrorText] = useState<string | null>(null);
-
+  const { setToast } = useToast();
   const [hasData, setHasData] = useState(false);
   const autoStartRef = useRef(false);
   const [inputPolicy, setInputPolicy] = useState("");
@@ -66,7 +67,7 @@ export default function RoadmapPage() {
     setErrorText(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/get-roadmap", {
+      const response = await fetch("http://localhost:5000/api/get-roadmap", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,6 +103,12 @@ export default function RoadmapPage() {
         }
       }
 
+      setToast({
+        title: "Roadmap Generated",
+        message: "The implementation roadmap has been successfully generated.",
+        variant: "success",
+      });
+
       const fileId = localStorage.getItem("fileId");
       if (fileId) {
         localStorage.setItem(`roadmap:${fileId}`, fullText);
@@ -113,10 +120,15 @@ export default function RoadmapPage() {
           ? err.message
           : "An error occurred while generating the roadmap.",
       );
+      setToast({
+        title: "Roadmap Generation Failed",
+        message: "An error occurred while generating the roadmap.",
+        variant: "error",
+      });
     } finally {
       setLoading(false);
     }
-  }, [hasData, inputPolicy, revisedPolicy]);
+  }, [hasData, inputPolicy, revisedPolicy, setToast]);
 
   useEffect(() => {
     if (hasData && !autoStartRef.current) {
