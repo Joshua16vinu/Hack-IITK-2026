@@ -258,46 +258,75 @@ export const downloadTextAsPdf = ({
     return false;
   };
 
-  // --- Minimal Centered Cover Page Design ---
+  // --- Colored Centered Cover Page Design ---
   const centerX = pageWidth / 2;
 
-  // Top Section
+  // 1. Structural Accent Bars
+  // Top Header Accent
+  doc.setFillColor(15, 23, 42); // slate-900
+  doc.rect(0, 0, pageWidth, 28, "F");
+  doc.setFillColor(37, 99, 235); // vibrant blue-600
+  doc.rect(0, 28, pageWidth, 6, "F");
+
+  // Bottom Footer Accent
+  doc.setFillColor(15, 23, 42); // slate-900
+  doc.rect(0, pageHeight - 28, pageWidth, 28, "F");
+  doc.setFillColor(37, 99, 235); // vibrant blue-600
+  doc.rect(0, pageHeight - 34, pageWidth, 6, "F");
+
+  // 2. Subtle Title Background Block
+  doc.setFillColor(244, 248, 255); // pale icy blue
+  doc.rect(0, pageHeight * 0.35, pageWidth, pageHeight * 0.22, "F");
+
+  // Top Section (Organization)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(37, 99, 235); // vibrant blue
+  doc.text("STRATEGIC COMPLIANCE ANALYSIS", centerX, pageHeight * 0.18, { align: "center" });
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.setTextColor(148, 163, 184);
-  doc.text("PolicyGuard", centerX, pageHeight * 0.15, { align: "center" });
+  doc.setTextColor(148, 163, 184); // slate-400
+  doc.text("P O L I C Y G U A R D   A I", centerX, pageHeight * 0.21, { align: "center" });
 
-  // Center Section
+  // Center Section (Main Title inside the pale blue block)
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(36);
-  doc.setTextColor(15, 23, 42);
-  const coverTitleY = pageHeight * 0.45;
+  doc.setFontSize(38);
+  doc.setTextColor(15, 23, 42); // dark slate
+  const coverTitleY = pageHeight * 0.44;
   const wrappedCoverTitle = doc.splitTextToSize(title.toUpperCase(), contentWidth - 40);
   doc.text(wrappedCoverTitle, centerX, coverTitleY, { align: "center" });
 
   // Subtitle
   doc.setFont("helvetica", "normal");
   doc.setFontSize(16);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(100, 116, 139); // slate-500
   const subtitleY = coverTitleY + wrappedCoverTitle.length * 42;
   doc.text("Based on NIST Framework", centerX, subtitleY, { align: "center" });
 
-  // Middle-Lower Section
+  // Middle-Lower Section (Date)
   const coverDateStr = new Intl.DateTimeFormat("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   }).format(new Date());
 
-  doc.setFontSize(12);
-  doc.setTextColor(100, 116, 139);
-  doc.text(`Date: ${coverDateStr}`, centerX, pageHeight * 0.75, { align: "center" });
+  // Date Label
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(37, 99, 235);
+  doc.text("REPORT DATE", centerX, pageHeight * 0.74, { align: "center" });
 
-  // Bottom Section
+  // Date Actual
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.setTextColor(15, 23, 42);
+  doc.text(coverDateStr, centerX, pageHeight * 0.77, { align: "center" });
+
+  // Bottom Section (Confidential Note overlapping bottom dark bar)
   doc.setFontSize(10);
-  doc.setTextColor(148, 163, 184);
-  doc.text("Confidential Report", centerX, pageHeight - 60, { align: "center" });
-  doc.text("Generated Automatically", centerX, pageHeight - 45, { align: "center" });
+  doc.setTextColor(226, 232, 240); // slate-200 (light text on dark bg)
+  doc.text("Confidential Report  •  Generated Automatically", centerX, pageHeight - 16, { align: "center" });
 
   // Add new page for actual content
   doc.addPage();
