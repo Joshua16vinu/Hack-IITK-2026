@@ -65,7 +65,8 @@ def call_llm(prompt: str) -> Any:
     
     try:
         return json.loads(generated_text)
-    except json.JSONDecodeError:
+    except (TypeError, json.JSONDecodeError) as e:
+        logger.warning("Failed to parse LLM output as JSON: %s. Retrying now...", e)
         try:
             extracted = extract_json(generated_text)
             if extracted:
@@ -76,11 +77,12 @@ def call_llm(prompt: str) -> Any:
                 except Exception:
                     pass
             
-            repaired = call_llm(REPAIR_LLM_RESPONSE.format(response=generated_text))
+            logger.info("Attempting to repair LLM response and parse again")
+            repaired = repair_llm_response(generated_text)
             if repaired and is_valid_gaps(repaired):
                 return repaired
         except Exception as e:
-            logger.warning("Failed to parse LLM output as JSON: %s", e) 
+            logger.warning("Failed to parse LLM output as JSON after repair: %s", e)
             return generated_text.strip()
     
 
@@ -113,3 +115,50 @@ def stream_llm(prompt: str) -> Iterator[str]:
     except Exception as e:
         logger.exception("stream_llm failed: %s", e)
         raise
+    
+    
+def repair_llm_response(response: str) -> str:
+    ensure_ollama_running()
+
+    payload = {
+        "model": MODEL_NAME,
+        "prompt": REPAIR_LLM_RESPONSE.format(response=response),
+        "stream": False,
+        "options": {
+            "temperature": 0.0,
+            "top_p": 0.9,
+            "num_predict": 512
+        }
+    }
+
+    logger.debug("Repairing LLM response with model=%s", MODEL_NAME)
+
+    try:
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json=payload
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("LLM request failed: %s", e)
+        raise
+    
+    body = response.json() 
+    logger.debug("Repaired LLM raw response body: %s", body) 
+    
+    generated_text = body.get("response", "")
+    logger.info("Repaired LLM response received")
+    
+    try:
+        parsed = json.loads(generated_text)
+        if is_valid_gaps(parsed):
+            return parsed
+        
+        extracted = extract_json(generated_text)
+        if extracted:
+            parsed = json.loads(extracted)
+            if is_valid_gaps(parsed):
+                return parsed
+    except (TypeError, json.JSONDecodeError) as e:
+        logger.warning("Failed to parse repaired LLM output as JSON: %s", e) 
+        return generated_text.strip()
