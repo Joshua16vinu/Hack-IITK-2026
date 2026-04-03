@@ -45,7 +45,7 @@ async def upload_pdf(
         logger.exception("Failed to read uploaded file")
         raise HTTPException(status_code=500, detail="Failed to read file")
 
-    file_id = str(uuid.uuid4())
+    file_id = generate_file_id(contents, domain)
     logger.info("Processing file_id=%s domain=%s", file_id, domain or "auto")
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -112,7 +112,6 @@ async def upload_pdf(
 
     return {
         "file_id": file_id,
-        "cached": False,
         "result": domain_chunks_policies,
         "extracted_text": text
     }

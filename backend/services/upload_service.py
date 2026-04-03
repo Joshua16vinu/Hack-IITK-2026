@@ -92,7 +92,7 @@ def restructure_chunks_by_domain(classified_chunks: list[dict]) -> list[dict]:
             domain_text_map.setdefault(domain, []).append(item["chunk"])
 
     # Only include domains that have enough chunks to form a batch
-    return [{"domain": domain, "text": texts, "related_nist_policies": []} for domain, texts in domain_text_map.items() if len(texts) >= CHUNKS_PER_BATCH]
+    return [{"domain": domain, "text": texts, "related_nist_policies": []} for domain, texts in domain_text_map.items() if len(texts) >= 1]
 
 
 # -------------------------------- Get domain chunks with policies --------------------------------
