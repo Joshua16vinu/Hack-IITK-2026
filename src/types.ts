@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 
-export type { AnalysisMode } from "@/context/ModeContext";
-
 export interface DomainEntry {
   domain: string;
   text: string | string[];
