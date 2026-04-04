@@ -58,6 +58,16 @@ export interface RevisedPolicyRequest {
   gapAnalysis: string;
 }
 
+export interface RecheckPolicyRequest {
+  revisedPolicy: string;
+  gaps: string;
+}
+
+export interface RecheckPolicyResponse {
+  message?: string;
+  remainingGaps?: string[];
+}
+
 export interface RoadmapRequest {
   inputPolicy: string;
   revisedPolicy: string;

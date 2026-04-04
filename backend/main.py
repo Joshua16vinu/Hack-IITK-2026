@@ -11,6 +11,7 @@ from helpers.logger import setup_logging, get_logger
 from routes.upload_route import upload_router
 from routes.gaps_route import gaps_router
 from routes.revision_route import revision_router
+from routes.recheck_route import recheck_router
 from routes.roadmap_route import roadmap_router
 
 
@@ -55,6 +56,7 @@ async def check_llm():
 app.include_router(upload_router, prefix='/api')
 app.include_router(gaps_router, prefix='/api')
 app.include_router(revision_router, prefix='/api')
+app.include_router(recheck_router, prefix='/api')
 app.include_router(roadmap_router, prefix='/api')
 
 

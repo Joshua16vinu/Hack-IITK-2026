@@ -207,23 +207,15 @@ export default function RoadmapPage() {
             </div>
           }
           action={
-            <button
-              onClick={handleGenerateRoadmap}
-              disabled={loading || !hasData}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                  <span>Planning...</span>
-                </>
-              ) : (
-                <>
-                  <Map className="w-4 h-4 text-slate-300 group-hover:scale-110 transition-transform duration-500" />
-                  <span>Regenerate Roadmap</span>
-                </>
-              )}
-            </button>
+            loading ? (
+              <button
+                disabled
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+              >
+                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                <span>Planning...</span>
+              </button>
+            ) : null
           }
         >
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-300 relative whitespace-pre-wrap">
@@ -234,8 +226,8 @@ export default function RoadmapPage() {
                   Ready to plan your execution.
                 </p>
                 <p className="text-sm max-w-sm mt-2 font-medium">
-                  Click &quot;Regenerate Roadmap&quot; to outline the
-                  implementation steps.
+                  Roadmap generation starts automatically when this page
+                  loads. Reload page if it does not start within a few seconds.
                 </p>
               </div>
             )}

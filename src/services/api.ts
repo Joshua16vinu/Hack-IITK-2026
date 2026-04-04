@@ -5,6 +5,8 @@ import type {
   RevisedPolicyRequest,
   UploadPdfRequest,
   UploadResult,
+  RecheckPolicyRequest,
+  RecheckPolicyResponse
 } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
@@ -112,6 +114,16 @@ export const generateRevisedPolicy = async ({ text, gapAnalysis }: RevisedPolicy
     body: JSON.stringify({ text, gap_analysis: gapAnalysis }),
   });
 };
+
+export const getRemainingGaps = async ({ revisedPolicy, gaps }: RecheckPolicyRequest) => {
+  return requestJson<RecheckPolicyResponse>(`${API_BASE_URL}/remaining-gaps`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ revised_policy: revisedPolicy, gaps: gaps }),
+  });
+}
 
 export const generateRoadmap = async ({ inputPolicy, revisedPolicy }: RoadmapRequest) => {
   return requestStream(`${API_BASE_URL}/get-roadmap`, {
