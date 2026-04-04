@@ -8,6 +8,7 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 
 MODEL_NAME = "mistral"
+# MODEL_NAME = "llama3.2:3b"
 
 
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"

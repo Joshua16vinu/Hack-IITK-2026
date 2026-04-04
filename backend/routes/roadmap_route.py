@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from helpers.llm_helper import stream_llm
 from helpers.logger import get_logger
-from prompts.construct_roadmap import ROADMAP_PROMPT
+from prompts.construct_roadmap import ROADMAP_PROMPT, ROADMAP_SYSTEM_PROMPT
 
 class RoadmapRequest(BaseModel):
     input_policy: str
@@ -25,7 +25,7 @@ async def roadmap(request: RoadmapRequest):
     
     try:
         logger.info("Starting roadmap generation")
-        llm_response = stream_llm(ROADMAP_PROMPT.format(
+        llm_response = stream_llm(ROADMAP_SYSTEM_PROMPT, ROADMAP_PROMPT.format(
             original_policy=request.input_policy, 
             revised_policy=request.revised_policy
         ))

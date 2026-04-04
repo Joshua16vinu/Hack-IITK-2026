@@ -24,7 +24,6 @@ RELATED NIST POLICIES:
 
 STRICT REQUIREMENTS:
 - Output MUST be valid JSON
-- Output MUST start with [ and end with ]
 - Do not include any text before or after the JSON
 - Do not include explanations, headers, or formatting
 

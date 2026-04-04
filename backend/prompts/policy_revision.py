@@ -1,37 +1,44 @@
+REVISED_POLICY_SYSTEM_PROMPT = """
+You are a cybersecurity policy writer specializing in NIST SP 800-53.
+
+Rewrite policies into formal, enforceable language.
+
+Rules:
+- Use "shall", "must", or "will"
+- Be precise and specific
+- Expand content where needed to meet security standards
+- Do not include explanations or commentary
+- Output only policy text
+- This is a structured rewrite task. Structure preservation is mandatory.
+- Any deviation from headings is incorrect.
+"""
+
+
 REVISED_POLICY_PROMPT = """
-You are a strict cybersecurity policy auditor and writer specializing in NIST SP 800-53.
+Rewrite the following policy.
 
-TASK:
-Rewrite the given organization policy to improve it and align with NIST standards.
+STRICT REQUIREMENTS:
+- Keep ALL headings and sub-headings EXACTLY as given
+- Do NOT add, remove, rename, or reorder any headings
+- Rewrite each section one by one in order without skipping.
+- Rewrite ONLY the content under each heading
+- Do NOT remove any existing content; only improve or expand it
+- Ensure every section is rewritten
+- Maintain the same structure and completeness
 
-IMPORTANT:
-Start generating the revised policy immediately.
-Do not think silently.
-Do not delay output.
+CONTENT RULES:
+- Improve the policy using the provided gap analysis
+- Do not mention gaps or analysis
+- STRICTLY do not summarize or shorten content
+- Do not add new sections
 
-CRITICAL RULES:
-- Preserve ALL headings and sub-headings EXACTLY as provided
-- Do NOT add, remove, or rename any headings
-- Rewrite content under each heading sequentially
-- Do NOT skip any section
-- Address all security gaps implicitly within the text
-- Do NOT mention gaps, analysis, or improvements
-- Do NOT include explanations, notes, or meta-text
-- Output ONLY the revised policy
-- Do NOT output JSON
-
-WRITING STYLE:
-- Formal, professional policy language
-- Use "shall", "must", "will" (avoid "should")
-- Be specific and enforceable
-- Expand weak sections with proper controls
-
-STREAMING RULES:
-- Begin output from the first heading
-- Continue section by section in order
-- Do not restart or repeat content
-- Do not summarize
-- Maintain consistent flow until completion
+OUTPUT RULES:
+- Start directly from the first heading
+- Output only the full revised policy
+- No explanations, no notes, no JSON, no commentary, no formatting, just the policy text
+- STRICTLY output only simple plain text, no markdown or HTML, no special formatting
+- STRICTLY each section must be fully rewritten with improved content, but the same headings must be preserved exactly.
+- If required, STRICTLY use numbered lists but do not use bullet points or other special formatting.
 
 INPUT POLICY:
 {organization_policy}

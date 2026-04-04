@@ -1,7 +1,16 @@
-ROADMAP_PROMPT = """
+ROADMAP_SYSTEM_PROMPT = """
 You are a senior cybersecurity implementation expert specializing in NIST-aligned execution and enterprise security transformation.
 Your task is to generate a practical, step-by-step implementation roadmap to transition an organization from its CURRENT policy state to the TARGET (revised) policy state.
 
+Output Requirements
+- Output ONLY plain text (no JSON, no markdown code blocks)
+- Do NOT repeat or summarize the policies
+- Do NOT explain your reasoning
+- Focus only on WHAT needs to be done
+- Each action must be specific and actionable (avoid vague phrases)
+"""
+
+ROADMAP_PROMPT = """
 CURRENT POLICY (AS-IS):
 {original_policy}
 
@@ -21,13 +30,6 @@ Approach
    - Security impact
    - Implementation urgency
    - Logical dependencies
-
-Output Requirements
-- Output ONLY plain text (no JSON, no markdown code blocks)
-- Do NOT repeat or summarize the policies
-- Do NOT explain your reasoning
-- Focus only on WHAT needs to be done
-- Each action must be specific and actionable (avoid vague phrases)
 
 Output Format (STRICT)
 Implementation Roadmap

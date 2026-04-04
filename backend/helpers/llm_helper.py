@@ -40,7 +40,8 @@ def call_llm(prompt: str) -> Any:
             "temperature": 0.1,
             "top_p": 0.8,
             # "num_ctx": 4096,
-            "num_predict": 512
+            "num_predict": 512,
+            "keep_alive": "20m"
         }
     }
 
@@ -61,7 +62,8 @@ def call_llm(prompt: str) -> Any:
     logger.debug("LLM raw response body: %s", body) 
     
     generated_text = body.get("response", "")
-    logger.info("LLM response received") 
+    logger.info("LLM response received")
+    print("Generated text:", generated_text)  # Debug print
     
     try:
         return json.loads(generated_text)
@@ -74,7 +76,7 @@ def call_llm(prompt: str) -> Any:
             except Exception:
                 if is_valid_gaps(extracted):
                     return extracted
-            
+            print("Extracted text:", extracted)  # Debug print
             logger.info("Attempting to repair LLM response and parse again")
             repaired = repair_llm_response(generated_text)
             if repaired and is_valid_gaps(repaired):
@@ -84,7 +86,7 @@ def call_llm(prompt: str) -> Any:
             return generated_text.strip()
     
 
-def stream_llm(prompt: str) -> Iterator[str]:
+def stream_llm(system_prompt: str, prompt: str) -> Iterator[str]:
     ensure_ollama_running()
 
     logger.info("Starting streamed LLM response")
@@ -94,6 +96,10 @@ def stream_llm(prompt: str) -> Iterator[str]:
             model=MODEL_NAME,
             messages=[
                 {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
                     "role": "user",
                     "content": prompt,
                 }
@@ -101,7 +107,8 @@ def stream_llm(prompt: str) -> Iterator[str]:
             options={
                 "temperature": 0.0,
                 "num_ctx": 8192,
-                "num_predict": -1
+                "num_predict": -1,
+                "keep_alive": "20m"
             },
             stream=True
         )
@@ -125,7 +132,8 @@ def repair_llm_response(response: str) -> str:
         "options": {
             "temperature": 0.0,
             "top_p": 0.9,
-            "num_predict": 512
+            "num_predict": 512,
+            "keep_alive": "20m"
         }
     }
 
@@ -147,16 +155,16 @@ def repair_llm_response(response: str) -> str:
     generated_text = body.get("response", "")
     logger.info("Repaired LLM response received")
     
+    
+    if is_valid_gaps(generated_text):
+        return generated_text
+    extracted = extract_json(generated_text)
+    if extracted:
+        if is_valid_gaps(extracted):
+            return extracted
+    print("Repaired text:", generated_text)  # Debug print
     try:
-        parsed = json.loads(generated_text)
-        if is_valid_gaps(parsed):
-            return parsed
-        
-        extracted = extract_json(generated_text)
-        if extracted:
-            parsed = json.loads(extracted)
-            if is_valid_gaps(parsed):
-                return parsed
+        return json.loads(generated_text)
     except (TypeError, json.JSONDecodeError) as e:
         logger.warning("Failed to parse repaired LLM output as JSON: %s", e) 
         return generated_text.strip()
