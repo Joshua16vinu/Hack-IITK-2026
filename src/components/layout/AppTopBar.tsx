@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import Logo from "@/app/logo.svg";
 import type { AppTopBarProps } from "@/types";
 import { Zap, Brain, Sparkles, ChevronDown, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ModeConfig {
   id: string;
@@ -57,7 +58,6 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
       queueMicrotask(() => setMode(savedMode));
     }
   }, []);
-
 
   const handleModeChange = (newMode: string) => {
     setMode(newMode);
@@ -134,7 +134,12 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
                     <button
                       id={`mode-option-${m.id}`}
                       onClick={() => handleModeChange(m.id)}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-150 hover:bg-slate-50"
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-150",
+                        isActive
+                          ? `bg-slate-100 border border-slate-200`
+                          : "hover:bg-slate-50",
+                      )}
                     >
                       {/* Icon */}
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
