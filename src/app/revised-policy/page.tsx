@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Loader2,
@@ -54,7 +54,7 @@ export default function RevisedPolicyPage() {
     }
     if (!text || !gapsRaw) {
       setErrorText(
-        "Required data (extracted text or gap analysis) is missing from localStorage. Please upload a policy first.",
+        "Required data could not be found. Please start by uploading a policy.",
       );
       return;
     }
@@ -252,23 +252,24 @@ export default function RevisedPolicyPage() {
             </div>
           }
           action={
-            <button
-              onClick={handleGeneratePolicy}
-              disabled={loading || !hasData}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
-                  <span>Regenerate Policy</span>
-                </>
-              )}
-            </button>
+            !loading && streamedText ? (
+              <button
+                onClick={handleGeneratePolicy}
+                disabled={!hasData || loading}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+              >
+                <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
+                <span>Re-analyze Policy</span>
+              </button>
+            ) : loading ? (
+              <button
+                disabled
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+              >
+                <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                <span>Generating Policy</span>
+              </button>
+            ) : undefined
           }
         >
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-300 relative whitespace-pre-wrap">
@@ -279,8 +280,8 @@ export default function RevisedPolicyPage() {
                   Ready to draft your new policy.
                 </p>
                 <p className="text-sm max-w-sm mt-2 font-medium">
-                  Click &quot;Regenerate Policy&quot; to begin streaming
-                  real-time AI revisions.
+                  Policy drafting starts automatically when this page loads.
+                  Reload page if it does not start within a few seconds.
                 </p>
               </div>
             )}
