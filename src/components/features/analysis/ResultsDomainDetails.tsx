@@ -95,6 +95,8 @@ export function ResultsDomainDetails({
                 <div className="text-center px-4">
                   {!activeGapData || activeGapData.status === "processing" ? (
                     <Loader2 className="w-8 h-8 mx-auto animate-spin text-red-500 mb-2" />
+                  ) : activeGapData.status === "failed" ? (
+                    <p className="text-4xl font-black text-red-500">0</p>
                   ) : (
                     <p className="text-4xl font-black text-red-500">
                       {activeGapsCount}

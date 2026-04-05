@@ -41,7 +41,6 @@ def call_llm(prompt: str) -> Any:
             "top_p": 0.8,
             # "num_ctx": 4096,
             "num_predict": 512,
-            "keep_alive": "20m"
         }
     }
 
@@ -107,8 +106,7 @@ def stream_llm(system_prompt: str, prompt: str) -> Iterator[str]:
             options={
                 "temperature": 0.0,
                 "num_ctx": 8192,
-                "num_predict": -1,
-                "keep_alive": "20m"
+                "num_predict": -1
             },
             stream=True
         )
@@ -133,7 +131,6 @@ def repair_llm_response(response: str) -> str:
             "temperature": 0.0,
             "top_p": 0.9,
             "num_predict": 512,
-            "keep_alive": "20m"
         }
     }
 

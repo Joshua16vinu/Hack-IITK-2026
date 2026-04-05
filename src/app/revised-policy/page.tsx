@@ -131,14 +131,14 @@ export default function RevisedPolicyPage() {
         gaps: combinedGaps,
       });
       const fileId = localStorage.getItem("fileId");
-      if (response.remainingGaps && response.remainingGaps.length > 0) {
+      if (response.remaining_gaps && response.remaining_gaps.length > 0) {
         if (fileId) {
           localStorage.setItem(
             `recheckGaps:${fileId}`,
-            JSON.stringify(response.remainingGaps),
+            JSON.stringify(response.remaining_gaps),
           );
         }
-        setRecheckGapsList(response.remainingGaps);
+        setRecheckGapsList(response.remaining_gaps);
         setRecheckStatus("has_gaps");
         setToast({
           title: "Recheck Completed",
@@ -338,7 +338,7 @@ export default function RevisedPolicyPage() {
                   ) : (
                     <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
                   )}
-                  <span>{isRechecking ? "Analyzing..." : "Recheck Policy"}</span>
+                  <span>{isRechecking ? "Analyzing..." : "Reanalyze Policy"}</span>
                 </button>
               )}
 
@@ -348,7 +348,7 @@ export default function RevisedPolicyPage() {
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
                 >
                   <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
-                  <span>Generating Policy</span>
+                  <span>Revising Policy</span>
                 </button>
               )}
 

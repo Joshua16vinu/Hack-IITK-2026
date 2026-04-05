@@ -98,7 +98,7 @@ export const startGapAnalysis = async ({ domainData }: AnalyzeGapsRequest) => {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ domainData, mode}),
+    body: JSON.stringify({ data: domainData, mode}),
   });
 };
 
@@ -119,18 +119,13 @@ export const generateRevisedPolicy = async ({ text, gapAnalysis }: RevisedPolicy
 };
 
 export const getRemainingGaps = async ({ revisedPolicy, gaps }: RecheckPolicyRequest) => {
-  const response = await requestJson<RecheckPolicyResponse & { remaining_gaps?: string[] }>(`${API_BASE_URL}/recheck-policy`, {
+  return requestJson<RecheckPolicyResponse>(`${API_BASE_URL}/recheck-policy`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ revised_policy: revisedPolicy, gaps: gaps, mode }),
   });
-
-  return {
-    message: response.message,
-    remainingGaps: response.remainingGaps ?? response.remaining_gaps,
-  };
 }
 
 export const generateRoadmap = async ({ inputPolicy, revisedPolicy }: RoadmapRequest) => {

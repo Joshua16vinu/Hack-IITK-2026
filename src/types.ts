@@ -65,7 +65,7 @@ export interface RecheckPolicyRequest {
 
 export interface RecheckPolicyResponse {
   message?: string;
-  remainingGaps?: string[];
+  remaining_gaps?: string[];
 }
 
 export interface RoadmapRequest {

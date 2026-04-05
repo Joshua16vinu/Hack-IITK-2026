@@ -15,7 +15,7 @@ def process_data(data):
         logger.info("Gap analysis worker started for %s domains", len(data))
         current_job["results"] = [
             {
-                "domain": item.get("domain"),
+                "domain": item.domain,
                 "status": "processing",
                 "gaps": None
             }
@@ -26,19 +26,17 @@ def process_data(data):
         current_job["completed"] = 0
 
         for index, item in enumerate(data):
-            domain = item.get("domain")
-            text = item.get("text")
-            nist_policies = item.get("related_nist_policies")
+            domain = item.domain
+            text = item.text
+            nist_policies = item.related_nist_policies
 
             current_job["current_domain"] = domain
 
-            formatted_policy = "\n\n".join(text) if isinstance(text, list) else (text or "")
+            formatted_policy = "\n\n".join(text) if isinstance(text, list) else str(text)
             formatted_nist = ""
             if isinstance(nist_policies, list):
                 formatted_nist = "\n\n".join(
-                    policy.get("content", "")
-                    if isinstance(policy, dict)
-                    else str(policy)
+                    policy.content
                     for policy in nist_policies
                     if policy
                 )

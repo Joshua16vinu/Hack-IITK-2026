@@ -1,3 +1,5 @@
+from pydantic import BaseModel
+
 from fastapi import APIRouter, Request, BackgroundTasks
 
 from services.gaps_service import process_data, current_job
@@ -6,17 +8,28 @@ from helpers.logger import get_logger
 gaps_router = APIRouter()
 logger = get_logger(__name__)
 
+class NistPolicy(BaseModel):
+    id: str
+    content: str
+
+class DataItem(BaseModel):
+    domain: str
+    text: list[str]
+    related_nist_policies: list[NistPolicy]
+
+class GapAnalysisRequest(BaseModel):
+    data: list[DataItem]
+    mode: str
+
 @gaps_router.post("/analyze-gaps")
-async def analyze_gaps(request: Request, background_tasks: BackgroundTasks):
+async def analyze_gaps(request: GapAnalysisRequest, background_tasks: BackgroundTasks):
     global current_job
 
     if current_job["status"] == "processing":
         logger.warning("Gap analysis request rejected because a job is already processing")
         return {"message": "LLM already running", "status": "processing"}
 
-    data = await request.json()
-
-    if not data:
+    if not request.data:
         logger.warning("Gap analysis request received with empty payload")
         return {"status": "failed", "message": "No data provided"}
 
@@ -27,8 +40,8 @@ async def analyze_gaps(request: Request, background_tasks: BackgroundTasks):
     current_job["total"] = 0
     current_job.pop("error", None)
 
-    logger.info("Starting gap analysis for %s domains", len(data))
-    background_tasks.add_task(process_data, data)
+    logger.info("Starting gap analysis for %s domains", len(request.data))
+    background_tasks.add_task(process_data, request.data)
 
     return current_job
 

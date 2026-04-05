@@ -85,6 +85,8 @@ export default function ResultsPage() {
   const [gapResults, setGapResults] = useState<GapResult[]>([]);
   const [hasRevisedPolicy, setHasRevisedPolicy] = useState(false);
   const [analyzing, setAnalyzing] = useState(true);
+  const [analysisStatus, setAnalysisStatus] =
+    useState<GapResult["status"]>("processing");
 
   const startedRef = useRef(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -116,6 +118,7 @@ export default function ResultsPage() {
     ) => {
       const nextResults = payload.results ?? gapResultsRef.current;
       updateGapResults(nextResults);
+      setAnalysisStatus(payload.status);
       updateAnalyzing(payload.status === "processing");
       writeGapAnalysisCache(fileId, {
         status: payload.status,
@@ -142,6 +145,7 @@ export default function ResultsPage() {
   const runGapAnalysis = useCallback(
     async (domainData: DomainEntry[], fileId: string) => {
       try {
+        setAnalysisStatus("processing");
         updateAnalyzing(true);
         const startRes = await startGapAnalysis({ domainData });
 
@@ -165,10 +169,12 @@ export default function ResultsPage() {
           if (cached) {
             queueMicrotask(() => {
               updateGapResults(cached.results);
+              setAnalysisStatus(cached.status);
               updateAnalyzing(cached.status === "processing");
             });
           }
 
+          setAnalysisStatus(currentStatus);
           writeGapAnalysisCache(fileId, {
             status: currentStatus,
             message: startRes.message,
@@ -185,6 +191,7 @@ export default function ResultsPage() {
             ))
         ) {
           stopPolling();
+          setAnalysisStatus(currentStatus);
           updateAnalyzing(false);
           return;
         }
@@ -210,6 +217,7 @@ export default function ResultsPage() {
                 message: statusRes.message,
               });
             } else {
+              setAnalysisStatus(polledStatus);
               writeGapAnalysisCache(fileId, {
                 status: polledStatus,
                 message: statusRes.message,
@@ -219,16 +227,26 @@ export default function ResultsPage() {
 
             if (polledStatus === "completed" || polledStatus === "failed") {
               stopPolling();
+              setAnalysisStatus(polledStatus);
               updateAnalyzing(false);
-              setToast({
-                title: "Gap Analysis Complete",
-                message: "The gap analysis has been completed.",
-                variant: "success",
-              });
+              setToast(
+                polledStatus === "failed"
+                  ? {
+                      title: "Gap Analysis Failed",
+                      message: "The gap analysis failed.",
+                      variant: "error",
+                    }
+                  : {
+                      title: "Gap Analysis Complete",
+                      message: "The gap analysis has been completed.",
+                      variant: "success",
+                    },
+              );
             }
           } catch (error) {
             console.error("Polling error:", error);
             stopPolling();
+            setAnalysisStatus("failed");
             updateAnalyzing(false);
             setToast({
               title: "Gap Analysis Failed",
@@ -239,6 +257,7 @@ export default function ResultsPage() {
         }, 15000);
       } catch (error) {
         console.error(error);
+        setAnalysisStatus("failed");
         updateAnalyzing(false);
       }
     },
@@ -265,6 +284,7 @@ export default function ResultsPage() {
     if (cached) {
       queueMicrotask(() => {
         updateGapResults(cached.results);
+        setAnalysisStatus(cached.status);
         updateAnalyzing(cached.status === "processing");
       });
 
@@ -400,11 +420,16 @@ export default function ResultsPage() {
 
     const map = new Map<string, GapResult>();
     grouped.forEach((entry, key) => {
-      const status: GapResult["status"] = entry.hasProcessing
+      const inferredStatus: GapResult["status"] = entry.hasProcessing
         ? "processing"
         : entry.hasCompleted
           ? "completed"
           : "failed";
+
+      const status: GapResult["status"] =
+        analysisStatus === "failed" && inferredStatus === "processing"
+          ? "failed"
+          : inferredStatus;
 
       map.set(key, {
         domain: entry.domain,
@@ -414,7 +439,7 @@ export default function ResultsPage() {
     });
 
     return map;
-  }, [gapResults]);
+  }, [gapResults, analysisStatus]);
 
   const domainWiseGapResults = useMemo(
     () => Array.from(domainWiseGapMap.values()),
@@ -422,9 +447,25 @@ export default function ResultsPage() {
   );
 
   const getDomainGapData = useCallback(
-    (domainName: string) =>
-      domainWiseGapMap.get(normalizeDomainName(domainName)),
-    [domainWiseGapMap],
+    (domainName: string) => {
+      const normalizedDomainName = normalizeDomainName(domainName);
+      const existing = domainWiseGapMap.get(normalizedDomainName);
+
+      if (existing) {
+        return existing;
+      }
+
+      if (analysisStatus === "failed") {
+        return {
+          domain: domainName,
+          status: "failed",
+          gaps: [],
+        } satisfies GapResult;
+      }
+
+      return undefined;
+    },
+    [domainWiseGapMap, analysisStatus],
   );
 
   if (!isHydrated || !domainWiseDomains.length) {
