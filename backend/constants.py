@@ -7,8 +7,8 @@ LOG_FOLDER = os.path.join(BACKEND_BASE_DIR, "logs")
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 
-MODEL_NAME = "mistral"
-# MODEL_NAME = "llama3.2:3b"
+MISTRAL_MODEL = "mistral"
+PHI_MODEL = "phi4-mini"
 
 
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"

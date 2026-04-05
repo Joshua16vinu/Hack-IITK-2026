@@ -1,6 +1,7 @@
 from helpers.llm_helper import call_llm
 from helpers.logger import get_logger
 from prompts.gap_analysis import GAP_ANALYSIS_PROMPT
+from constants import MISTRAL_MODEL, PHI_MODEL
 
 current_job = {
     "status": "idle",
@@ -10,7 +11,7 @@ current_job = {
 logger = get_logger(__name__)
 
 
-def process_data(data):
+def process_data(data, mode):
     try:
         logger.info("Gap analysis worker started for %s domains", len(data))
         current_job["results"] = [
@@ -42,13 +43,19 @@ def process_data(data):
                 )
             elif nist_policies:
                 formatted_nist = str(nist_policies)
+            
+            if mode == "deep":
+                MODEL_NAME = MISTRAL_MODEL
+            else:
+                MODEL_NAME = PHI_MODEL
 
             try:
                 llm_response = call_llm(
                     GAP_ANALYSIS_PROMPT.format(
                         organization_policy=formatted_policy,
                         related_nist_policies=formatted_nist
-                    )
+                    ),
+                    MODEL_NAME
                 )
 
                 current_job["results"][index] = {

@@ -5,10 +5,12 @@ from pydantic import BaseModel
 from helpers.llm_helper import call_llm
 from helpers.logger import get_logger
 from prompts.recheck_policy import RECHECK_POLICY_PROMPT
+from constants import MISTRAL_MODEL, PHI_MODEL
 
 class RecheckRequest(BaseModel):
     revised_policy: str
     gaps: str
+    mode: str
 
 recheck_router = APIRouter()
 logger = get_logger(__name__)
@@ -61,13 +63,18 @@ async def recheck_policy(request: RecheckRequest):
             status_code=400,
             detail={"message": "Missing 'revised_policy' or 'gaps' (cannot be empty strings)"}
         )
+        
+    if request.mode == "deep":
+        MODEL_NAME = MISTRAL_MODEL
+    else:
+        MODEL_NAME = PHI_MODEL
 
     try:
         logger.info("Starting recheck policy generation")
         llm_response = call_llm(RECHECK_POLICY_PROMPT.format(
             revised_policy=request.revised_policy,
             gaps=request.gaps
-        ))
+        ), MODEL_NAME)
     except Exception as e:
         logger.exception("Recheck policy generation failed")
         raise HTTPException(

@@ -5,11 +5,13 @@ from pydantic import BaseModel
 
 from helpers.llm_helper import stream_llm
 from helpers.logger import get_logger
+from constants import MISTRAL_MODEL, PHI_MODEL
 from prompts.policy_revision import REVISED_POLICY_PROMPT, REVISED_POLICY_SYSTEM_PROMPT
 
 class RevisionRequest(BaseModel):
     text: str
     gap_analysis: str
+    mode: str
 
 revision_router = APIRouter()
 logger = get_logger(__name__)
@@ -22,13 +24,18 @@ async def revise_policy(request: RevisionRequest):
             status_code=400,
             detail={"message": "Missing 'text' or 'gap_analysis' (cannot be empty strings)"}
         )
+        
+    if request.mode == "rapid":
+        MODEL_NAME = PHI_MODEL
+    else:
+        MODEL_NAME = MISTRAL_MODEL
 
     try:
         logger.info("Starting revised policy generation")
         llm_response = stream_llm(REVISED_POLICY_SYSTEM_PROMPT, REVISED_POLICY_PROMPT.format(
             organization_policy=request.text, 
             gap_analysis=request.gap_analysis
-        ))
+        ), MODEL_NAME)
     except Exception as e:
         logger.exception("Revised policy generation failed")
         raise HTTPException(

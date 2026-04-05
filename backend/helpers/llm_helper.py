@@ -5,7 +5,7 @@ import time
 import json
 from typing import Any, Iterator
 
-from constants import MODEL_NAME
+from constants import PHI_MODEL
 from helpers.logger import setup_logging, get_logger
 from helpers.response_formatter import extract_json, is_valid_gaps
 from prompts.response_format import REPAIR_LLM_RESPONSE
@@ -29,8 +29,10 @@ def ensure_ollama_running():
         logger.info("Ollama startup wait complete")
 
 
-def call_llm(prompt: str) -> Any:
+def call_llm(prompt: str, MODEL_NAME: str) -> Any:
     ensure_ollama_running()
+    
+    logger.info("Generating LLM response with model=%s", MODEL_NAME)
 
     payload = {
         "model": MODEL_NAME,
@@ -43,8 +45,6 @@ def call_llm(prompt: str) -> Any:
             "num_predict": 512,
         }
     }
-
-    logger.debug("Sending LLM payload with model=%s", MODEL_NAME)
 
     try:
         response = requests.post(
@@ -85,10 +85,10 @@ def call_llm(prompt: str) -> Any:
             return generated_text.strip()
     
 
-def stream_llm(system_prompt: str, prompt: str) -> Iterator[str]:
+def stream_llm(system_prompt: str, prompt: str, MODEL_NAME: str) -> Iterator[str]:
     ensure_ollama_running()
 
-    logger.info("Starting streamed LLM response")
+    logger.info("Starting streamed LLM response with model=%s", MODEL_NAME)
 
     try:
         response = ollama.chat(
@@ -124,7 +124,7 @@ def repair_llm_response(response: str) -> str:
     ensure_ollama_running()
 
     payload = {
-        "model": MODEL_NAME,
+        "model": PHI_MODEL,
         "prompt": REPAIR_LLM_RESPONSE.format(response=response),
         "stream": False,
         "options": {
@@ -134,7 +134,7 @@ def repair_llm_response(response: str) -> str:
         }
     }
 
-    logger.debug("Repairing LLM response with model=%s", MODEL_NAME)
+    logger.debug("Repairing LLM response with model=%s", PHI_MODEL)
 
     try:
         response = requests.post(

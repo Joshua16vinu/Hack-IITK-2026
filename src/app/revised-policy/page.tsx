@@ -20,7 +20,6 @@ import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
 import { generateRevisedPolicy, getRemainingGaps } from "@/services/api";
 import type { GapCacheResult } from "@/types";
-
 export default function RevisedPolicyPage() {
   const router = useRouter();
 
@@ -35,7 +34,9 @@ export default function RevisedPolicyPage() {
   const [combinedGaps, setCombinedGaps] = useState("");
 
   const [isRechecking, setIsRechecking] = useState(false);
-  const [recheckStatus, setRecheckStatus] = useState<"idle" | "no_gaps" | "has_gaps">("idle");
+  const [recheckStatus, setRecheckStatus] = useState<
+    "idle" | "no_gaps" | "has_gaps"
+  >("idle");
   const [recheckGapsList, setRecheckGapsList] = useState<string[]>([]);
 
   const contentEndRef = useRef<HTMLDivElement>(null);
@@ -99,7 +100,7 @@ export default function RevisedPolicyPage() {
             .map((g: string) => `* ${g}`)
             .join("\n");
           const recheckStr = recheckGaps
-            ? `\n\\nGeneral Gaps:\n${JSON.parse(recheckGaps)
+            ? `\n\nGeneral Gaps:\n${JSON.parse(recheckGaps)
                 .map((g: string) => `* ${g}`)
                 .join("\n")}`
             : "";
@@ -132,13 +133,21 @@ export default function RevisedPolicyPage() {
       });
       const fileId = localStorage.getItem("fileId");
       if (response.remaining_gaps && response.remaining_gaps.length > 0) {
+        const remainingGaps = response.remaining_gaps;
         if (fileId) {
           localStorage.setItem(
             `recheckGaps:${fileId}`,
-            JSON.stringify(response.remaining_gaps),
+            JSON.stringify(remainingGaps),
           );
         }
-        setRecheckGapsList(response.remaining_gaps);
+        setCombinedGaps((prev) => {
+          const baseGaps = prev.split("\n\nGeneral Gaps:\n")[0];
+          const remainingGapsText = remainingGaps
+            .map((g: string) => `* ${g}`)
+            .join("\n");
+          return `${baseGaps}\n\nGeneral Gaps:\n${remainingGapsText}`;
+        });
+        setRecheckGapsList(remainingGaps);
         setRecheckStatus("has_gaps");
         setToast({
           title: "Recheck Completed",
@@ -338,7 +347,9 @@ export default function RevisedPolicyPage() {
                   ) : (
                     <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
                   )}
-                  <span>{isRechecking ? "Analyzing..." : "Reanalyze Policy"}</span>
+                  <span>
+                    {isRechecking ? "Analyzing..." : "Reanalyze Policy"}
+                  </span>
                 </button>
               )}
 

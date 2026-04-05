@@ -41,7 +41,7 @@ async def analyze_gaps(request: GapAnalysisRequest, background_tasks: Background
     current_job.pop("error", None)
 
     logger.info("Starting gap analysis for %s domains", len(request.data))
-    background_tasks.add_task(process_data, request.data)
+    background_tasks.add_task(process_data, request.data, request.mode)
 
     return current_job
 
