@@ -96,7 +96,7 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
 
         {!isHomeRoute && section && (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold text-${activeMode.color}-600 border-${activeMode.color}-100 bg-${activeMode.color}-50`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold text-${activeMode.color}-500 border-${activeMode.color}-100 bg-${activeMode.color}-50`}
           >
             <activeMode.icon
               className={`w-3.5 h-3.5 text-${activeMode.color}-500`}
