@@ -9,8 +9,6 @@ import type {
   RecheckPolicyResponse
 } from "@/types";
 
-const mode = typeof window !== "undefined" ? localStorage.getItem("mode") || "auto" : "auto";
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5000/api";
 
 interface ErrorPayload {
@@ -77,10 +75,18 @@ const requestStream = async (
   return response;
 };
 
+const getMode = () => {
+  if (typeof window === "undefined") {
+    return "auto";
+  }
+
+  return localStorage.getItem("mode") || "auto";
+};
+
 export const uploadPdf = async ({ file, domain }: UploadPdfRequest) => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("mode", mode);
+  formData.append("mode", getMode());
 
   if (domain) {
     formData.append("domain", domain);
@@ -98,7 +104,7 @@ export const startGapAnalysis = async ({ domainData }: AnalyzeGapsRequest) => {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ data: domainData, mode}),
+    body: JSON.stringify({ data: domainData, mode: getMode() }),
   });
 };
 
@@ -114,7 +120,7 @@ export const generateRevisedPolicy = async ({ text, gapAnalysis }: RevisedPolicy
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ text, gap_analysis: gapAnalysis, mode }),
+    body: JSON.stringify({ text, gap_analysis: gapAnalysis, mode: getMode() }),
   });
 };
 
@@ -124,7 +130,7 @@ export const getRemainingGaps = async ({ revisedPolicy, gaps }: RecheckPolicyReq
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ revised_policy: revisedPolicy, gaps: gaps, mode }),
+    body: JSON.stringify({ revised_policy: revisedPolicy, gaps: gaps, mode: getMode() }),
   });
 }
 
@@ -137,7 +143,7 @@ export const generateRoadmap = async ({ inputPolicy, revisedPolicy }: RoadmapReq
     body: JSON.stringify({
       input_policy: inputPolicy,
       revised_policy: revisedPolicy,
-      mode
+      mode: getMode()
     }),
   });
 };

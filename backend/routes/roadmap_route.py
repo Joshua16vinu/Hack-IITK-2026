@@ -11,6 +11,7 @@ from prompts.construct_roadmap import ROADMAP_PROMPT, ROADMAP_SYSTEM_PROMPT
 class RoadmapRequest(BaseModel):
     input_policy: str
     revised_policy: str
+    mode: str
 
 roadmap_router = APIRouter()
 logger = get_logger(__name__)
