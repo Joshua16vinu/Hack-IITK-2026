@@ -13,6 +13,46 @@ class RecheckRequest(BaseModel):
 recheck_router = APIRouter()
 logger = get_logger(__name__)
 
+def _normalize_recheck_response(llm_response):
+    if isinstance(llm_response, dict):
+        message = llm_response.get("message")
+        if (
+            isinstance(message, str)
+            and message.strip()
+            == "No gaps remain. Revised policy fully addresses all identified gaps."
+        ):
+            return {"message": "No more gaps found. Revised policy fully addresses all identified gaps."}
+        return {"remaining_gaps": [json.dumps(llm_response)]}
+
+    if isinstance(llm_response, list):
+        remaining_gaps = [str(item).strip() for item in llm_response if str(item).strip()]
+        if remaining_gaps:
+            return {"remaining_gaps": remaining_gaps}
+        raise HTTPException(
+            status_code=500,
+            detail={"message": "LLM did not return a valid response"}
+        )
+
+    if isinstance(llm_response, str):
+        normalized = llm_response.strip()
+        if not normalized:
+            raise HTTPException(
+                status_code=500,
+                detail={"message": "LLM did not return a valid response"}
+            )
+
+        try:
+            parsed = json.loads(normalized)
+            return _normalize_recheck_response(parsed)
+        except json.JSONDecodeError:
+            return {"remaining_gaps": [normalized]}
+
+    raise HTTPException(
+        status_code=500,
+        detail={"message": "LLM did not return a valid response"}
+    )
+
+
 @recheck_router.post("/recheck-policy")
 async def recheck_policy(request: RecheckRequest):
     if not request.revised_policy or not request.gaps:
@@ -35,16 +75,9 @@ async def recheck_policy(request: RecheckRequest):
             detail={"message": "LLM processing failed", "error": str(e)}
         )
 
-    if(json.loads(llm_response)):
-        if ("message" in llm_response and llm_response["message"] == "No gaps remain. Revised policy fully addresses all identified gaps."):
-            logger.info("Recheck policy generation completed with no remaining gaps")
-            return {"message": "No more gaps found. Revised policy fully addresses all identified gaps."}
-        else:
-            logger.info("Recheck policy generation completed with remaining gaps identified")
-            return {"remaining_gaps": llm_response}
+    normalized_response = _normalize_recheck_response(llm_response)
+    if "message" in normalized_response:
+        logger.info("Recheck policy generation completed with no remaining gaps")
     else:
-        logger.warning("Recheck policy generation completed but no valid response was returned")
-        raise HTTPException(
-            status_code=500,
-            detail={"message": "LLM did not return a valid response"}
-        )
+        logger.info("Recheck policy generation completed with remaining gaps identified")
+    return normalized_response

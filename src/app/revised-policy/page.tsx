@@ -18,7 +18,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
 import { downloadTextAsPdf } from "@/lib/pdf";
-import { generateRevisedPolicy } from "@/services/api";
+import { generateRevisedPolicy, getRemainingGaps } from "@/services/api";
 import type { GapCacheResult } from "@/types";
 
 export default function RevisedPolicyPage() {
@@ -34,6 +34,10 @@ export default function RevisedPolicyPage() {
   const [extractedText, setExtractedText] = useState("");
   const [combinedGaps, setCombinedGaps] = useState("");
 
+  const [isRechecking, setIsRechecking] = useState(false);
+  const [recheckStatus, setRecheckStatus] = useState<"idle" | "no_gaps" | "has_gaps">("idle");
+  const [recheckGapsList, setRecheckGapsList] = useState<string[]>([]);
+
   const contentEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,14 +48,25 @@ export default function RevisedPolicyPage() {
 
   useEffect(() => {
     const fileId = localStorage.getItem("fileId");
+    if (!fileId) {
+      setErrorText(
+        "Required data could not be found. Please start by uploading a policy.",
+      );
+      return;
+    }
+
     const gapCacheKey = `gapAnalysis:${fileId}`;
+    const recheckGapsKey = `recheckGaps:${fileId}`;
+
     const text = localStorage.getItem("extractedText");
     const gapsRaw = localStorage.getItem(gapCacheKey);
+    const recheckGaps = localStorage.getItem(recheckGapsKey);
 
     const cachedPolicy = localStorage.getItem(`revisedPolicy:${fileId}`);
     if (cachedPolicy) {
       setStreamedText(cachedPolicy);
     }
+
     if (!text || !gapsRaw) {
       setErrorText(
         "Required data could not be found. Please start by uploading a policy.",
@@ -83,7 +98,12 @@ export default function RevisedPolicyPage() {
           const gapsStr = (result.gaps || [])
             .map((g: string) => `* ${g}`)
             .join("\n");
-          return `${domainStr}\n${gapsStr}`;
+          const recheckStr = recheckGaps
+            ? `\n\\nGeneral Gaps:\n${JSON.parse(recheckGaps)
+                .map((g: string) => `* ${g}`)
+                .join("\n")}`
+            : "";
+          return `${domainStr}\n${gapsStr}${recheckStr}`;
         })
         .join("\n\n");
 
@@ -97,12 +117,66 @@ export default function RevisedPolicyPage() {
     }
   }, []);
 
+  const handleRecheckPolicy = useCallback(async () => {
+    if (!streamedText || !combinedGaps) return;
+
+    setIsRechecking(true);
+    setRecheckStatus("idle");
+    setRecheckGapsList([]);
+    setErrorText(null);
+
+    try {
+      const response = await getRemainingGaps({
+        revisedPolicy: streamedText,
+        gaps: combinedGaps,
+      });
+      const fileId = localStorage.getItem("fileId");
+      if (response.remainingGaps && response.remainingGaps.length > 0) {
+        if (fileId) {
+          localStorage.setItem(
+            `recheckGaps:${fileId}`,
+            JSON.stringify(response.remainingGaps),
+          );
+        }
+        setRecheckGapsList(response.remainingGaps);
+        setRecheckStatus("has_gaps");
+        setToast({
+          title: "Recheck Completed",
+          message: "Remaining gaps have been identified.",
+          variant: "warning",
+        });
+      } else {
+        if (fileId) {
+          localStorage.setItem(`recheckGaps:${fileId}`, JSON.stringify([]));
+        }
+        setRecheckStatus("no_gaps");
+        setToast({
+          title: "Recheck Completed",
+          message: response.message || "No remaining gaps found.",
+          variant: "success",
+        });
+      }
+    } catch (err) {
+      console.error("Error during recheck:", err);
+      setErrorText("An error occurred while rechecking the revised policy.");
+      setToast({
+        title: "Recheck Failed",
+        message: "An error occurred while rechecking the revised policy.",
+        variant: "error",
+      });
+    } finally {
+      setIsRechecking(false);
+    }
+  }, [combinedGaps, streamedText, setToast]);
+
   const handleGeneratePolicy = useCallback(async () => {
     if (!hasData) return;
 
     setLoading(true);
     setStreamedText("");
     setErrorText(null);
+    setRecheckStatus("idle");
+    setRecheckGapsList([]);
 
     try {
       const response = await generateRevisedPolicy({
@@ -252,27 +326,69 @@ export default function RevisedPolicyPage() {
             </div>
           }
           action={
-            !loading && streamedText ? (
-              <button
-                onClick={handleGeneratePolicy}
-                disabled={!hasData || loading}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
-              >
-                <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
-                <span>Re-analyze Policy</span>
-              </button>
-            ) : loading ? (
-              <button
-                disabled
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
-              >
-                <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
-                <span>Generating Policy</span>
-              </button>
-            ) : undefined
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              {!loading && streamedText && recheckStatus === "idle" && (
+                <button
+                  onClick={handleRecheckPolicy}
+                  disabled={!hasData || isRechecking}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+                >
+                  {isRechecking ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
+                  )}
+                  <span>{isRechecking ? "Analyzing..." : "Recheck Policy"}</span>
+                </button>
+              )}
+
+              {loading && (
+                <button
+                  disabled
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+                >
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-300" />
+                  <span>Generating Policy</span>
+                </button>
+              )}
+
+              {!loading && recheckStatus === "no_gaps" && (
+                <div className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 border border-emerald-200 text-sm font-bold rounded-xl transition-all shadow-sm">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>No gaps found</span>
+                </div>
+              )}
+
+              {!loading && recheckStatus === "has_gaps" && (
+                <button
+                  onClick={handleGeneratePolicy}
+                  disabled={!hasData || loading}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-amber-900/20 disabled:opacity-50 disabled:cursor-not-allowed group w-full sm:w-auto justify-center"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-100 group-hover:scale-110 transition-transform duration-500" />
+                  <span>Regenerate Policy</span>
+                </button>
+              )}
+            </div>
           }
         >
           <div className="flex-1 bg-slate-50 rounded-2xl border border-slate-200 p-6 overflow-y-auto font-mono text-sm leading-relaxed text-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-300 relative whitespace-pre-wrap">
+            {recheckStatus === "has_gaps" && recheckGapsList.length > 0 && (
+              <div className="mb-6 p-5 bg-amber-50 border border-amber-200 rounded-xl shadow-sm">
+                <h3 className="text-base font-bold text-amber-900 mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-600" />
+                  Remaining Gaps Identified
+                </h3>
+                <ul className="list-disc list-inside text-sm text-amber-800 space-y-2 font-sans">
+                  {recheckGapsList.map((gap, idx) => (
+                    <li key={idx} className="leading-relaxed">
+                      {gap}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {!streamedText && !loading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400/60 p-8 text-center">
                 <ShieldCheck className="w-16 h-16 mb-4 opacity-50" />
