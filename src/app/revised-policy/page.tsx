@@ -348,7 +348,7 @@ export default function RevisedPolicyPage() {
                     <RefreshCw className="w-4 h-4 text-slate-300 group-hover:rotate-180 transition-transform duration-500" />
                   )}
                   <span>
-                    {isRechecking ? "Analyzing..." : "Reanalyze Policy"}
+                    {isRechecking ? "Reanalyzing..." : "Reanalyze Policy"}
                   </span>
                 </button>
               )}

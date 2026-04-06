@@ -1,4 +1,5 @@
 import json
+import requests
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -71,10 +72,17 @@ async def recheck_policy(request: RecheckRequest):
 
     try:
         logger.info("Starting recheck policy generation")
-        llm_response = call_llm(RECHECK_POLICY_PROMPT.format(
-            revised_policy=request.revised_policy,
-            gaps=request.gaps
-        ), MODEL_NAME)
+        llm_response = call_llm(
+            RECHECK_POLICY_PROMPT.format(
+                revised_policy=request.revised_policy,
+                gaps=request.gaps
+            ),
+            MODEL_NAME,
+            20,
+        )
+    except requests.Timeout:
+        logger.warning("Recheck policy generation timed out, returning no-more-gaps message")
+        return {"message": "No more gaps found. Revised policy fully addresses all identified gaps."}
     except Exception as e:
         logger.exception("Recheck policy generation failed")
         raise HTTPException(

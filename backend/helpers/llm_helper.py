@@ -3,7 +3,7 @@ import subprocess
 import requests
 import time
 import json
-from typing import Any, Iterator
+from typing import Any, Iterator, Optional
 
 from constants import PHI_MODEL
 from helpers.logger import setup_logging, get_logger
@@ -29,7 +29,7 @@ def ensure_ollama_running():
         logger.info("Ollama startup wait complete")
 
 
-def call_llm(prompt: str, MODEL_NAME: str) -> Any:
+def call_llm(prompt: str, MODEL_NAME: str, timeout_seconds: Optional[int] = None) -> Any:
     ensure_ollama_running()
     
     logger.info("Generating LLM response with model=%s", MODEL_NAME)
@@ -47,10 +47,15 @@ def call_llm(prompt: str, MODEL_NAME: str) -> Any:
     }
 
     try:
+        request_kwargs = {
+            "json": payload,
+        }
+        if timeout_seconds is not None:
+            request_kwargs["timeout"] = timeout_seconds
+
         response = requests.post(
             "http://localhost:11434/api/generate",
-            json=payload,
-            # timeout=60
+            **request_kwargs,
         )
         response.raise_for_status()
     except requests.RequestException as e:
@@ -62,7 +67,6 @@ def call_llm(prompt: str, MODEL_NAME: str) -> Any:
     
     generated_text = body.get("response", "")
     logger.info("LLM response received")
-    print("Generated text:", generated_text)  # Debug print
     
     try:
         return json.loads(generated_text)
@@ -75,7 +79,6 @@ def call_llm(prompt: str, MODEL_NAME: str) -> Any:
             except Exception:
                 if is_valid_gaps(extracted):
                     return extracted
-            print("Extracted text:", extracted)  # Debug print
             logger.info("Attempting to repair LLM response and parse again")
             repaired = repair_llm_response(generated_text)
             if repaired and is_valid_gaps(repaired):
@@ -152,14 +155,12 @@ def repair_llm_response(response: str) -> str:
     generated_text = body.get("response", "")
     logger.info("Repaired LLM response received")
     
-    
     if is_valid_gaps(generated_text):
         return generated_text
     extracted = extract_json(generated_text)
     if extracted:
         if is_valid_gaps(extracted):
             return extracted
-    print("Repaired text:", generated_text)  # Debug print
     try:
         return json.loads(generated_text)
     except (TypeError, json.JSONDecodeError) as e:
