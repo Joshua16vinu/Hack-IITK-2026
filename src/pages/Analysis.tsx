@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronRight, Download, Loader2 } from "lucide-react";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { useToast } from "@/components/ui/Toast";
@@ -77,7 +77,7 @@ const getCachedDomains = (): DomainEntry[] => {
 };
 
 export default function ResultsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { setToast } = useToast();
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -268,7 +268,7 @@ export default function ResultsPage() {
     if (!isHydrated || startedRef.current) return;
 
     if (!domains.length) {
-      router.replace("/");
+      navigate("/", { replace: true });
       return;
     }
 
@@ -276,7 +276,7 @@ export default function ResultsPage() {
     const fileId = localStorage.getItem("fileId");
 
     if (!fileId) {
-      router.replace("/");
+      navigate("/", { replace: true });
       return;
     }
 
@@ -302,8 +302,8 @@ export default function ResultsPage() {
     };
   }, [
     isHydrated,
-    router,
     domains,
+    navigate,
     runGapAnalysis,
     updateAnalyzing,
     updateGapResults,
@@ -517,7 +517,7 @@ export default function ResultsPage() {
         actions={
           <>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => navigate("/")}
               className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
             >
               <ArrowLeft className="w-4 h-4" /> New Upload
@@ -535,7 +535,7 @@ export default function ResultsPage() {
             </button>
 
             <button
-              onClick={() => router.push("/revised-policy")}
+              onClick={() => navigate("/revised-policy")}
               disabled={
                 analyzing ||
                 domainWiseGapResults.some(
@@ -548,7 +548,7 @@ export default function ResultsPage() {
             </button>
 
             <button
-              onClick={() => router.push("/roadmap")}
+              onClick={() => navigate("/roadmap")}
               disabled={!hasRevisedPolicy}
               className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
             >

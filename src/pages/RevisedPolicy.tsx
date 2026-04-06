@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import {
   Loader2,
   ArrowLeft,
@@ -21,7 +21,7 @@ import { downloadTextAsPdf } from "@/lib/pdf";
 import { generateRevisedPolicy, getRemainingGaps } from "@/services/api";
 import type { GapCacheResult } from "@/types";
 export default function RevisedPolicyPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
   const [streamedText, setStreamedText] = useState("");
@@ -264,7 +264,7 @@ export default function RevisedPolicyPage() {
         actions={
           <>
             <button
-              onClick={() => router.push("/analysis")}
+              onClick={() => navigate("/analysis")}
               className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-bold transition-colors px-3 py-2 rounded-lg hover:bg-slate-100"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Analysis
@@ -279,7 +279,7 @@ export default function RevisedPolicyPage() {
               Download Policy
             </button>
             <button
-              onClick={() => router.push("/roadmap")}
+              onClick={() => navigate("/roadmap")}
               disabled={!streamedText || loading}
               className={`flex items-center gap-2 px-6 py-2 text-white text-sm font-bold rounded-lg transition-all shadow-lg ${
                 !streamedText || loading
@@ -311,7 +311,7 @@ export default function RevisedPolicyPage() {
             action={
               !hasData && (
                 <button
-                  onClick={() => router.push("/")}
+                  onClick={() => navigate("/")}
                   className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
                 >
                   Go to Upload

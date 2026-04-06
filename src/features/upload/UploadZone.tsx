@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   UploadCloud,
@@ -50,7 +50,7 @@ const PROCESSING_LOGS = [
 ];
 
 export function UploadZone({ onSuccess }: UploadProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { setToast } = useToast();
   const [selectedDomain, setSelectedDomain] = useState<string>("");
   const [isDomainOpen, setIsDomainOpen] = useState(false);
@@ -123,7 +123,7 @@ export function UploadZone({ onSuccess }: UploadProps) {
         // Ensure successful processing triggers navigation without tab update
         localStorage.setItem("uploadedDomains", JSON.stringify(uploadRes));
         onSuccess(uploadRes);
-        router.push("/analysis");
+        navigate("/analysis");
       }, 900);
     } catch {
       if (logTimer) clearInterval(logTimer);

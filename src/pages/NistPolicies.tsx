@@ -15,7 +15,7 @@ import {
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { AppTopBar } from "@/components/layout/AppTopBar";
 import { getStyle } from "@/data/domainStyles";
 
@@ -53,7 +53,7 @@ export default function NistPoliciesPage() {
         section="NIST Policy Library"
         actions={
           <Link
-            href="/"
+            to="/"
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

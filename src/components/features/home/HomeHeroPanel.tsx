@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "react-router-dom";
 import { BookOpen, Hexagon, ShieldCheck } from "lucide-react";
 
 const FEATURE_CARDS = [
@@ -25,7 +25,7 @@ export function HomeHeroPanel() {
     <div className="space-y-10 pl-4">
       <div className="flex flex-wrap items-center gap-4">
         <Link
-          href="/nist-policies"
+          to="/nist-policies"
           className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white border border-slate-200 shadow-sm shadow-blue-900/5 hover:border-blue-300 hover:shadow-md transition-all text-slate-700 hover:text-blue-700 group focus:ring-2 focus:ring-blue-500/20 outline-none"
         >
           <BookOpen className="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform duration-300" />

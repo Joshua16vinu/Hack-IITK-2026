@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import Logo from "@/app/logo.svg";
+import { Link, useLocation } from "react-router-dom";
 import type { AppTopBarProps } from "@/types";
 import { Zap, Brain, Sparkles, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,7 +41,7 @@ const MODES: ModeConfig[] = [
 ];
 
 export function AppTopBar({ section, actions }: AppTopBarProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [mode, setMode] = useState<string>(MODES[0].id);
   const [open, setOpen] = useState(false);
   const isHomeRoute = pathname === "/";
@@ -83,11 +80,11 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
       {/* Left: Logo + Brand + Section */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 flex items-center justify-center">
-          <Image src={Logo} alt="PolicyGuard Logo" height={30} width={30} />
+          <img src="logo.svg" alt="PolicyGuard Logo" height={30} width={30} />
         </div>
         <Link
           className="font-extrabold text-slate-900 tracking-tight text-lg"
-          href="/"
+          to="/"
         >
           Policy<span className="text-blue-600">Guard</span>
         </Link>
