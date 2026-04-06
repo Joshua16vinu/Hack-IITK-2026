@@ -59,7 +59,7 @@ def call_llm(prompt: str, MODEL_NAME: str, timeout_seconds: Optional[int] = None
         )
         response.raise_for_status()
     except requests.RequestException as e:
-        logger.error("LLM request failed: %s", e)
+        # logger.error("LLM request failed: %s", e)
         raise
     
     body = response.json() 

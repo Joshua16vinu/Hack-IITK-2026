@@ -80,7 +80,7 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
       {/* Left: Logo + Brand + Section */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 flex items-center justify-center">
-          <img src="logo.svg" alt="PolicyGuard Logo" height={30} width={30} />
+          <img src="logo.svg" alt="PolicyGuard Logo" height={24} width={24} />
         </div>
         <Link
           className="font-extrabold text-slate-900 tracking-tight text-lg"

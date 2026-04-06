@@ -66,11 +66,11 @@ async def recheck_policy(request: RecheckRequest):
         )
         
     if request.mode == "deep":
-        MODEL_NAME = MISTRAL_MODEL
         time = None
     else:
-        MODEL_NAME = PHI_MODEL
-        time = 20
+        time = 1
+    
+    MODEL_NAME = PHI_MODEL
 
     try:
         logger.info("Starting recheck policy generation")
@@ -83,7 +83,6 @@ async def recheck_policy(request: RecheckRequest):
             time,
         )
     except requests.Timeout:
-        logger.warning("Recheck policy generation timed out, returning no-more-gaps message")
         return {"message": "No more gaps found. Revised policy fully addresses all identified gaps."}
     except Exception as e:
         logger.exception("Recheck policy generation failed")
