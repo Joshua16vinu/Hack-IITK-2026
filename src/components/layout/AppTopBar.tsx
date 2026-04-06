@@ -12,7 +12,11 @@ interface ModeConfig {
   label: string;
   description: string;
   icon: React.ElementType;
-  color: string;
+  color: {
+    text: string;
+    bg: string;
+    border: string;
+  };
 }
 
 const MODES: ModeConfig[] = [
@@ -22,21 +26,21 @@ const MODES: ModeConfig[] = [
     label: "Auto",
     description: "Best mix of speed and accuracy",
     icon: Sparkles,
-    color: "blue",
+    color: { text: "text-blue-500", bg: "bg-blue-50", border: "border-blue-100" },
   },
   {
     id: "rapid",
     label: "Rapid",
     description: "Get results faster with efficient analysis",
     icon: Zap,
-    color: "amber",
+    color: { text: "text-amber-500", bg: "bg-amber-50", border: "border-amber-100" },
   },
   {
     id: "deep",
     label: "Deep",
     description: "Think longer for better answers",
     icon: Brain,
-    color: "violet",
+    color: { text: "text-violet-500", bg: "bg-violet-50", border: "border-violet-100" },
   },
 ];
 
@@ -93,10 +97,10 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
 
         {!isHomeRoute && section && (
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold text-${activeMode.color}-500 border-${activeMode.color}-100 bg-${activeMode.color}-50`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold ${activeMode.color.text} ${activeMode.color.border} ${activeMode.color.bg}`}
           >
             <activeMode.icon
-              className={`w-3.5 h-3.5 text-${activeMode.color}-500`}
+              className={`w-3.5 h-3.5 ${activeMode.color.text}`}
             />
             {activeMode.label}
           </span>
@@ -113,7 +117,7 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
             className="flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <activeMode.icon
-              className={`w-4 h-4 text-${activeMode.color}-500`}
+              className={`w-4 h-4 ${activeMode.color.text}`}
             />
             <span className="text-slate-800">{activeMode.label} Mode</span>
             <ChevronDown
@@ -140,7 +144,7 @@ export function AppTopBar({ section, actions }: AppTopBarProps) {
                     >
                       {/* Icon */}
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
-                        <m.icon className={`w-4 h-4 text-${m.color}-500`} />
+                        <m.icon className={`w-4 h-4 ${m.color.text}`} />
                       </div>
 
                       {/* Label + description */}
