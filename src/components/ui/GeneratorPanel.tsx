@@ -12,6 +12,13 @@ export function GeneratorPanel({
         {action}
       </div>
       {children}
+
+      <div className="pt-4 text-right">
+        <p className="text-sm text-slate-500 italic">
+          <span className="font-medium text-slate-700">Note:</span> This content
+          was created by AI and may require a policy audit review.
+        </p>
+      </div>
     </div>
   );
 }
