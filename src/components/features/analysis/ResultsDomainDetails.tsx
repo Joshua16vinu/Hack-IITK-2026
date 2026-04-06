@@ -158,7 +158,7 @@ export function ResultsDomainDetails({
                           <StreamingText
                             text={gap}
                             id={gapId}
-                            speed={100}
+                            speed={200}
                             start={isAlreadyCompleted || isActiveNow}
                             onComplete={() => handleGapStreamComplete(gapId)}
                           />
@@ -220,7 +220,7 @@ export function ResultsDomainDetails({
                             <StreamingText
                               text={policy.content}
                               id={policyId}
-                              speed={100}
+                              speed={50}
                               start={isAlreadyCompleted || isActiveNow}
                               onComplete={() =>
                                 handlePolicyStreamComplete(policyId)
