@@ -1,328 +1,313 @@
-# PolicyGuard AI — Complete System Flow Overview
+# PolicyGuard AI - Current System Flow Overview
 
 ## 1) System Purpose
-PolicyGuard AI analyzes an uploaded organization policy PDF against NIST-aligned controls, identifies compliance gaps, generates a revised policy, and then builds an implementation roadmap.
+PolicyGuard AI analyzes an uploaded policy PDF against NIST-aligned content, identifies compliance gaps, generates a revised policy, rechecks remaining gaps, and builds an implementation roadmap.
 
----
+## 2) Architecture
 
-## 2) High-Level Architecture
-
-### Frontend (Next.js)
+### Frontend (React + Vite)
 - Path: `src/`
-- Key pages:
-  - `/` → upload and domain selection
-  - `/analysis` → gap analysis status/results
-  - `/revised-policy` → streamed revised policy generation
-  - `/roadmap` → streamed implementation roadmap generation
-  - `/nist-policies` → static NIST template library reference
+- Router: React Router (`src/App.tsx`)
+- Key routes:
+  - `/` - upload + mode selection
+  - `/analysis` - gap analysis progress/results
+  - `/revised-policy` - revised policy generation + recheck
+  - `/roadmap` - roadmap generation
+  - `/nist-policies` - static reference page
 
 ### Backend (FastAPI)
 - Path: `backend/`
 - Entry point: `backend/main.py`
 - API prefix: `/api`
-- Core routes:
-  - `POST /api/upload-pdf`
-  - `POST /api/analyze-gaps` + `GET /api/analyze-gaps` (poll status)
-  - `POST /api/revised-policy` (streaming)
-  - `POST /api/get-roadmap` (streaming)
-  - `GET /api/get-analysis/{file_id}`
+- Mounted route modules:
+  - `upload_route.py`
+  - `gaps_route.py`
+  - `revision_route.py`
+  - `recheck_route.py`
+  - `roadmap_route.py`
 
-### AI/Vector Dependencies
-- Ollama (`mistral`) for generation and streaming
-- SentenceTransformer (`all-MiniLM-L6-v2`) for embeddings
-- ChromaDB collections:
-  - `domain_kb` for domain classification support
-  - `nist_controls` for related policy retrieval
+### AI and Retrieval
+- Generation: Ollama local server (`http://localhost:11434`)
+- Generation models:
+  - `mistral`
+  - `phi4-mini`
+- Embeddings: `all-MiniLM-L6-v2` (local model directory)
+- Vector store: local persistent ChromaDB in `backend/chroma_data/`
+- Chroma collections:
+  - `domain_kb`
+  - `nist_controls`
 
----
+## 3) Startup and Initialization
 
-## 3) Startup and Initialization Flow
+### 3.1 Backend startup (`backend/main.py`)
+- Configures logging
+- Enables permissive CORS
+- Ensures upload folder exists (`backend/uploads`)
 
-1. **Backend startup (`backend/main.py`)**
-   - Configures logging
-   - Enables permissive CORS
-   - Ensures directories exist:
-     - `backend/uploads`
-     - `backend/storage`
+### 3.2 LLM availability checks
+- `GET /check-llm` probes Ollama and attempts `ollama serve` if unavailable
+- LLM helper also self-checks Ollama before each call
 
-2. **LLM health**
-   - `GET /check-llm` tests `http://localhost:11434`
-   - If unavailable, attempts `ollama serve`
+### 3.3 Embedding model provisioning
+Run once if missing:
+```bash
+cd backend
+python download_embedding_model.py
+```
 
-3. **Embedding model provisioning (one-time / setup)**
-   - `python backend/download_embedding_model.py`
-   - Saves model into `backend/models/all-MiniLM-L6-v2`
+### 3.4 Ingestion (knowledge preparation)
+```bash
+cd backend
+python -m ingestion.ingest_domain_data
+python -m ingestion.ingest_nist
+```
 
-4. **Chroma ingestion (setup phase)**
-   - `python -m ingestion.ingest_domain_data` populates `domain_kb`
-   - `python -m ingestion.ingest_nist` populates `nist_controls`
-
----
-
-## 4) Offline Knowledge Preparation Flow (Ingestion)
+## 4) Knowledge Preparation Flow
 
 ### 4.1 Domain KB ingestion (`backend/ingestion/ingest_domain_data.py`)
 1. Reads `backend/ingestion/domain_data.json`
-2. For each domain phrase in `kb`, computes embedding
-3. Upserts into Chroma collection `domain_kb` with metadata `{ domain }`
+2. Embeds domain support text
+3. Upserts into `domain_kb` with domain metadata
 
-### 4.2 NIST controls ingestion (`backend/ingestion/ingest_nist.py`)
+### 4.2 NIST ingestion (`backend/ingestion/ingest_nist.py`)
 1. Reads `backend/ingestion/chunks_of_nist.json`
-2. Embeds each NIST chunk text
-3. Upserts into Chroma collection `nist_controls` with metadata:
-   - `domain`
-   - `source`
+2. Embeds each NIST chunk
+3. Upserts into `nist_controls` with metadata
 
-This prepared data powers runtime domain classification and NIST retrieval during upload processing.
+## 5) End-to-End Runtime Flow
 
----
+## Step A - Upload and preprocess policy PDF
+Frontend page: `/`
 
-## 5) End-to-End Runtime Flow (User Journey)
+### Request
+`POST /api/upload-pdf` (multipart form-data)
+- `file` (required)
+- `domain` (optional)
 
-## Step A — Upload and preprocess policy PDF
-Frontend page: `/` (upload UI in `src/features/upload/UploadZone.tsx`)
-
-1. User selects optional domain or leaves auto mode.
-2. User uploads PDF.
-3. Frontend calls `POST /api/upload-pdf` (multipart form-data):
-   - `file`: PDF
-   - `domain` (optional)
-
-### Backend processing in `upload_route.py`
-1. Validates file existence and `.pdf` extension.
-2. Reads file bytes.
-3. Generates deterministic `file_id` (MD5 + optional domain suffix).
-4. Saves original file to `backend/uploads/`.
-5. Extracts text via `pdfplumber` (`helpers/pdf_helper.py`).
-6. Checks cache (`backend/storage/{file_id}.json`):
-   - If found: returns cached result + extracted text.
-7. Chunks text (`helpers/chunking_helper.py`) using token-aware sentence chunking.
-8. Builds domain-wise chunks:
-   - **Manual domain mode:** batch chunks into balanced groups (`CHUNKS_PER_BATCH=4`).
-   - **Auto mode:** classify each chunk with hybrid score:
-     - semantic score from Chroma `domain_kb`
-     - keyword score from `domain_data.json`
-     - weighted combine (`0.6 semantic + 0.4 keyword`)
-     - optional multi-domain assignment when top-score gap is below threshold.
-9. Retrieves related NIST policies per domain from Chroma `nist_controls`.
-10. Saves result JSON in `backend/storage/` for reuse.
-11. Returns payload:
+### Backend (`backend/routes/upload_route.py`)
+1. Validates file presence and `.pdf` extension
+2. Reads bytes and generates deterministic `file_id` (md5 + optional domain suffix)
+3. Saves file into `backend/uploads/`
+4. Extracts text via `helpers/pdf_helper.py`
+5. Chunks text via token-aware sentence chunking (`helpers/chunking_helper.py`)
+6. Branches by domain mode:
+   - Manual domain selected:
+     - batches chunks (`CHUNKS_PER_BATCH=3`)
+     - tags all batches with selected domain
+   - Auto domain mode:
+     - classifies each chunk using hybrid score
+     - semantic score (Chroma `domain_kb`) + keyword score (`domain_data.json`)
+     - weighted combine (`0.7 semantic + 0.3 keyword`)
+     - optional dual-domain assignment when top-score gap < threshold (`0.05`)
+7. Retrieves related NIST snippets from `nist_controls` per domain group
+8. Returns:
    - `file_id`
-   - `cached`
-   - `result` (domain chunks + related NIST policies)
+   - `result` (domain groups + related NIST policies)
    - `extracted_text`
 
 ### Frontend persistence after upload
-`src/app/page.tsx` stores in `localStorage`:
+Stores to `localStorage`:
 - `uploadedDomains`
 - `extractedText`
 - `fileId`
 
 Then navigates to `/analysis`.
 
----
-
-## Step B — Gap analysis generation
+## Step B - Gap analysis (async with polling)
 Frontend page: `/analysis`
 
-1. Reads `uploadedDomains` + `fileId` from `localStorage`.
-2. Starts analysis with `POST /api/analyze-gaps`.
-3. Polls `GET /api/analyze-gaps` every 15 seconds until done.
-4. Caches progress/results in `localStorage` key:
-   - `gapAnalysis:<fileId>`
+1. Reads `uploadedDomains` and `fileId` from `localStorage`
+2. Starts job with `POST /api/analyze-gaps`
+3. Polls `GET /api/analyze-gaps` every 15s
+4. Caches progress/results in `localStorage` key `gapAnalysis:<fileId>`
 
-### Backend behavior (`gaps_route.py` + `gaps_service.py`)
-1. Uses global `current_job` state.
-2. Rejects concurrent start if existing status is `processing`.
-3. Runs worker in FastAPI background task.
-4. For each domain item:
-   - Formats organization chunk text
-   - Formats retrieved NIST reference text
-   - Calls LLM (`call_llm`) with `GAP_ANALYSIS_PROMPT`
-   - Stores per-domain status + gaps in `current_job.results`
-5. Updates job counters (`completed`, `total`) and final status (`completed`/`failed`).
+### Backend (`backend/routes/gaps_route.py` + `backend/services/gaps_service.py`)
+1. Uses global `current_job`
+2. Rejects new start when status is `processing`
+3. Background task iterates each domain entry
+4. Formats org text + related NIST text
+5. Calls LLM with `GAP_ANALYSIS_PROMPT`
+6. Updates per-domain result status and `current_job` counters
+7. Sets final job status to `completed` or `failed`
 
-### Gap output expectations
-Prompt requests concise gap array (3–5 items, specific and actionable), without JSON wrappers.
+### Gap analysis model selection
+- Mode `deep` -> `mistral`
+- Mode `auto` or `rapid` -> `phi4-mini`
 
----
-
-## Step C — Revised policy generation (streaming)
+## Step C - Revised policy generation (streaming)
 Frontend page: `/revised-policy`
 
-1. Reads from `localStorage`:
-   - `extractedText`
-   - `gapAnalysis:<fileId>`
-2. Builds combined gap text grouped by domain.
-3. Calls `POST /api/revised-policy` with JSON:
-   - `text`
-   - `gap_analysis`
-4. Consumes streaming response chunks and appends text live.
-5. Saves final output to:
-   - `revisedPolicy:<fileId>`
+1. Loads `extractedText` and `gapAnalysis:<fileId>`
+2. Builds combined gap text (domain-wise)
+3. Calls `POST /api/revised-policy`
+4. Reads stream and appends content live
+5. Stores final output in `localStorage` key `revisedPolicy:<fileId>`
 
-### Backend behavior (`revision_route.py`)
-1. Validates non-empty `text` and `gap_analysis`.
-2. Formats `REVISED_POLICY_PROMPT`.
-3. Streams tokens/chunks from `stream_llm(...)` as `text/event-stream`.
+### Backend (`backend/routes/revision_route.py`)
+1. Validates non-empty `text` and `gap_analysis`
+2. Formats revision prompt
+3. Streams response via `helpers.llm_helper.stream_llm`
 
----
+### Revised policy model selection
+- Mode `rapid` -> `phi4-mini`
+- Mode `auto` or `deep` -> `mistral`
 
-## Step D — Implementation roadmap generation (streaming)
+## Step D - Recheck revised policy against gaps
+Frontend page: `/revised-policy`
+
+1. User triggers "Reanalyze Policy"
+2. Calls `POST /api/recheck-policy` with revised policy + combined gaps
+3. If `remaining_gaps` exist:
+   - store in `localStorage` as `recheckGaps:<fileId>`
+   - update combined gaps for regeneration
+4. If no gaps:
+   - show success state
+
+### Backend (`backend/routes/recheck_route.py`)
+1. Validates non-empty `revised_policy` and `gaps`
+2. Calls non-stream LLM (`call_llm`) using recheck prompt
+3. Normalizes varied LLM response formats into:
+   - `{ "remaining_gaps": [...] }` or
+   - `{ "message": "No more gaps found..." }`
+
+### Recheck model selection and timeout
+- Always model `phi4-mini`
+- Mode `deep` -> no timeout
+- Mode `auto` or `rapid` -> timeout=1s; timeout treated as no remaining gaps
+
+## Step E - Roadmap generation (streaming)
 Frontend page: `/roadmap`
 
-1. Reads from `localStorage`:
-   - `extractedText` (original)
-   - `revisedPolicy:<fileId>`
-2. Calls `POST /api/get-roadmap` with JSON:
-   - `input_policy`
-   - `revised_policy`
-3. Reads and renders streamed chunks.
-4. Saves final output to:
-   - `roadmap:<fileId>`
+1. Loads `extractedText` and `revisedPolicy:<fileId>`
+2. Calls `POST /api/get-roadmap`
+3. Reads stream progressively and renders live
+4. Stores final output in `localStorage` key `roadmap:<fileId>`
 
-### Backend behavior (`roadmap_route.py`)
-1. Validates request JSON and required fields.
-2. Formats `ROADMAP_PROMPT`.
-3. Streams roadmap text from `stream_llm(...)`.
+### Backend (`backend/routes/roadmap_route.py`)
+1. Validates `input_policy` and `revised_policy`
+2. Formats roadmap prompt
+3. Streams generated roadmap via `stream_llm`
 
----
+### Roadmap model selection
+- Mode `rapid` -> `phi4-mini`
+- Mode `auto` or `deep` -> `mistral`
 
-## 6) LLM Service Flow (`helpers/llm_helper.py`)
+## 6) LLM Service Behavior (`backend/helpers/llm_helper.py`)
 
-### Non-streaming calls (`call_llm`)
-1. Ensures Ollama service is reachable (starts it if needed).
-2. Sends prompt to Ollama generate endpoint (`/api/generate`) with model `mistral`.
-3. Attempts JSON parse of response body string.
-4. Falls back to raw stripped text if parse fails.
+### Non-stream (`call_llm`)
+1. Ensures Ollama server is reachable
+2. Calls `/api/generate` with low temperature
+3. Attempts to parse as JSON
+4. If parse fails:
+   - extract JSON fragments
+   - attempt response repair prompt
+   - fallback to raw text
 
-### Streaming calls (`stream_llm`)
-1. Ensures Ollama service is running.
-2. Opens `ollama.chat(..., stream=True)`.
-3. Yields partial content chunks progressively.
+### Stream (`stream_llm`)
+1. Ensures Ollama is running
+2. Uses `ollama.chat(..., stream=True)`
+3. Yields partial content chunks
 
----
+## 7) Data Persistence
 
-## 7) Data Storage and Caching Strategy
+### Backend persistence
+- Uploaded files: `backend/uploads/`
+- ChromaDB persistent store: `backend/chroma_data/`
 
-### Server-side storage
-- Folder: `backend/storage/`
-- File naming: `{file_id}.json`
-- `file_id` deterministic from PDF bytes (+ optional domain), enabling reuse for same input.
-
-### Client-side storage (`localStorage`)
+### Frontend persistence (`localStorage`)
+- `mode`
 - `uploadedDomains`
 - `extractedText`
 - `fileId`
 - `gapAnalysis:<fileId>`
 - `revisedPolicy:<fileId>`
+- `recheckGaps:<fileId>`
 - `roadmap:<fileId>`
 
-This supports resumable UI behavior and reduces repeated LLM calls.
-
----
-
-## 8) Core API Contracts (Observed)
+## 8) API Contracts (Current)
 
 ### `POST /api/upload-pdf`
-- **Input:** multipart (`file`, optional `domain`)
-- **Output:**
-  - `file_id: string`
-  - `cached: boolean`
-  - `result: Array<{domain, text, related_nist_policies}>`
-  - `extracted_text: string`
+Input:
+- multipart: `file`, optional `domain`
 
-### `POST /api/analyze-gaps`
-- **Input:** array of domain objects from upload result
-- **Output:** current job object (`status`, `results`, counters)
-
-### `GET /api/analyze-gaps`
-- **Output:** latest global job state
-
-### `POST /api/revised-policy`
-- **Input:** `{ text: string, gap_analysis: string }`
-- **Output:** streamed text response
-
-### `POST /api/get-roadmap`
-- **Input:** `{ input_policy: string, revised_policy: string }`
-- **Output:** streamed text response
-
-### `GET /api/get-analysis/{file_id}`
-- **Output:** cached server analysis for that file_id
-
----
-
-## 9) Sequence Diagram (Conceptual)
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant FE as Next.js Frontend
-    participant BE as FastAPI Backend
-    participant CH as ChromaDB
-    participant OL as Ollama
-
-    U->>FE: Upload PDF (+optional domain)
-    FE->>BE: POST /api/upload-pdf
-    BE->>BE: Extract text + chunk policy
-    alt Auto domain mode
-        BE->>CH: Query domain_kb similarities
-        BE->>BE: Hybrid domain classification
-    else Manual domain mode
-        BE->>BE: Batch chunks by selected domain
-    end
-    BE->>CH: Query nist_controls by domain
-    BE->>BE: Save cache in storage/{file_id}.json
-    BE-->>FE: file_id + extracted_text + domain results
-
-    FE->>BE: POST /api/analyze-gaps
-    loop Until complete
-        FE->>BE: GET /api/analyze-gaps
-        BE-->>FE: job status/results
-    end
-    BE->>OL: Gap prompts per domain
-    OL-->>BE: Gap outputs
-
-    FE->>BE: POST /api/revised-policy
-    BE->>OL: Revised-policy prompt
-    OL-->>BE: Stream revised policy
-    BE-->>FE: Streaming text chunks
-
-    FE->>BE: POST /api/get-roadmap
-    BE->>OL: Roadmap prompt
-    OL-->>BE: Stream roadmap
-    BE-->>FE: Streaming text chunks
+Output:
+```json
+{
+  "file_id": "string",
+  "result": [
+    {
+      "domain": "string",
+      "text": ["string"],
+      "related_nist_policies": [
+        { "id": "string", "content": "string" }
+      ]
+    }
+  ],
+  "extracted_text": "string"
+}
 ```
 
----
+### `POST /api/analyze-gaps`
+Input:
+```json
+{
+  "data": [
+    {
+      "domain": "string",
+      "text": ["string"],
+      "related_nist_policies": [
+        { "id": "string", "content": "string" }
+      ]
+    }
+  ],
+  "mode": "auto | rapid | deep"
+}
+```
 
-## 10) Error Handling and Operational Notes
+Output: current job snapshot (`status`, `results`, counters)
 
-- Upload rejects missing/non-PDF files.
-- Revised-policy and roadmap routes validate required fields.
-- Gap analysis is single-active-job due to global `current_job` state.
-- Streaming endpoints return partial content progressively (better UX for long responses).
-- Cache-first behavior on upload avoids repeated preprocessing and retrieval work.
+### `GET /api/analyze-gaps`
+Output: latest global job state
 
----
+### `POST /api/revised-policy`
+Input:
+```json
+{
+  "text": "string",
+  "gap_analysis": "string",
+  "mode": "auto | rapid | deep"
+}
+```
+Output: streamed text
 
-## 11) Important Constraints / Characteristics
+### `POST /api/recheck-policy`
+Input:
+```json
+{
+  "revised_policy": "string",
+  "gaps": "string",
+  "mode": "auto | rapid | deep"
+}
+```
+Output:
+```json
+{ "remaining_gaps": ["..."] }
+```
+or
+```json
+{ "message": "No more gaps found..." }
+```
 
-1. **Single process shared state for gap jobs**
-   - `current_job` is in-memory global state; concurrent users share the same job context.
+### `POST /api/get-roadmap`
+Input:
+```json
+{
+  "input_policy": "string",
+  "revised_policy": "string",
+  "mode": "auto | rapid | deep"
+}
+```
+Output: streamed text
 
-2. **Localhost-coupled integrations**
-   - Ollama expected at `localhost:11434`
-   - Chroma expected at `localhost:8000`
-
-3. **Frontend-backend URL assumptions**
-   - Frontend currently calls hardcoded backend URLs (`127.0.0.1:5000` / `localhost:5000`).
-
-4. **Output format dependence on prompts**
-   - Gap/revision/roadmap quality and structure are prompt-driven.
-
----
-
-## 12) Flow Summary in One Line
-
-**Upload PDF → extract/chunk/classify → retrieve NIST references → run gap analysis (polled) → stream revised policy → stream implementation roadmap, with both server-side and browser-side caching for reuse.**
+## One-Line Summary
+Upload PDF -> extract/chunk/classify -> retrieve NIST context -> run polled gap analysis -> stream revised policy -> recheck remaining gaps -> stream roadmap, with key outputs cached in browser localStorage.

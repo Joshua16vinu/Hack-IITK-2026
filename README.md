@@ -1,122 +1,204 @@
 # PolicyGuard AI
 
-A Next.js frontend and FastAPI backend system for Policy Analysis using LLMs.
+React + Vite frontend and FastAPI backend for policy analysis against NIST guidance.
 
-## Features
-- **Modern UI**: Premium dark mode design with glassmorphism and animations.
-- **Drag & Drop Upload**: Easy file handling.
-- **Real-time Progress**: Visual feedback during analysis.
-- **Interactive Report**: Collapsible sections for Gap Analysis, Revised Policy, and Roadmap.
+## What It Does
+1. Upload an organization policy PDF.
+2. Extract and chunk text.
+3. Classify chunks by domain (auto) or force a selected domain (manual).
+4. Retrieve related NIST chunks from local ChromaDB.
+5. Run gap analysis.
+6. Generate a revised policy (streamed).
+7. Recheck the revised policy for remaining gaps.
+8. Generate an implementation roadmap (streamed).
+
+## Tech Stack
+- Frontend: React 19, TypeScript, Vite, React Router, Tailwind CSS
+- Backend: FastAPI, Ollama, SentenceTransformers, ChromaDB (local persistent)
+- Models:
+  - `mistral`
+  - `phi4-mini`
+  - `all-MiniLM-L6-v2` (local embedding model in `backend/models/`)
 
 ## Prerequisites
-- Bun installed
-- Python 3.8+ installed
-- Ollama installed and running (for local LLM support)
+- Python 3.10+
+- Node.js 20+ (or Bun)
+- Ollama installed
 
-## Setup & Running the Application
+## 1) Ollama Setup
+Install and start Ollama, then pull required models.
 
-Please follow these steps in order to start the application.
+```bash
+# install (Linux/macOS)
+curl -fsSL https://ollama.com/install.sh | sh
 
-### 1. Ollama Setup
-1. Download and install [Ollama](https://ollama.com/download):
-   ```bash
-   # macOS / Linux
-   curl -fsSL https://ollama.com/install.sh | sh
-   ```
+# start server
+ollama serve
 
-   ```powershell
-   # Windows PowerShell
-   irm https://ollama.com/install.ps1 | iex
-   ```
-2. Start the Ollama server:
-   ```bash
-   ollama serve
-   ```
-3. Pull the required LLM model:
-   ```bash
-   ollama pull mistral
-   ```
+# pull generation models used by this project
+ollama pull mistral
+ollama pull phi4-mini
+```
 
-### 2. Backend Setup
-1. Open a new terminal and navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   ```
-   ```bash
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-   ```bash
-   # On Windows:
-   venv\Scripts\activate
-   ```
-3. Install the required Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Download the local embedding model:
-   ```bash
-   python download_embedding_model.py
-   ```
-   *This downloads `all-MiniLM-L6-v2` into `backend/models/` for embedding generation.*
+## 2) Backend Setup
+From project root:
 
-5. Run ingestion to populate the local database:
-   ```bash
-   # Ingest NIST data
-   python -m ingestion.ingest_nist
-   
-   # Ingest domain-specific data
-   python -m ingestion.ingest_domain_data
-   ```
-   *ChromaDB is used as a local persistent store from `backend/chroma_data/`.*
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-6. Start the FastAPI backend server (in the original backend terminal):
-   ```bash
-   uvicorn main:app --port 5000 --reload
-   ```
-   *The backend will now be running on `http://127.0.0.1:5000`.*
+Download embedding model locally:
 
-### 3. Frontend Setup
-1. Open another terminal in the root directory of the project.
-2. Install Bun (if not already installed):
-   ```bash
-   # macOS, Linux, and WSL
-   curl -fsSL https://bun.sh/install | bash
-   ```
-   
-   ```bash
-   # Windows
-   powershell -c "irm bun.sh/install.ps1|iex"
-   ```
-3. Install frontend dependencies:
-   ```bash
-   bun install
-   ```
-4. Start the frontend development server:
-   ```bash
-   bun dev
-   ```
-5. **Open the Application**: Navigate to [http://localhost:3000](http://localhost:3000) in your web browser.
+```bash
+python download_embedding_model.py
+```
+
+Run ingestion once (or whenever source ingestion files change):
+
+```bash
+python -m ingestion.ingest_domain_data
+python -m ingestion.ingest_nist
+```
+
+Run FastAPI server:
+
+```bash
+uvicorn main:app --reload
+```
+
+Backend base URL:
+- `http://localhost:8000`
+
+## 3) Frontend Setup
+From project root (new terminal):
+
+```bash
+# with Bun
+bun install
+bun dev
+
+# or with npm
+# npm install
+# npm run dev
+```
+
+Frontend dev URL (default Vite):
+- `http://localhost:5173`
+
+## Runtime Flow (Current)
+### A. Upload
+- Endpoint: `POST /api/upload-pdf`
+- Request: multipart form-data
+  - `file` (required PDF)
+  - `domain` (optional)
+- Response:
+  - `file_id`
+  - `result` (domain grouped text + related NIST policies)
+  - `extracted_text`
+
+Behavior:
+- If `domain` is provided, chunks are batched and assigned to that domain.
+- If `domain` is omitted, chunk classification uses hybrid scoring:
+  - semantic similarity from `domain_kb`
+  - keyword scoring from `ingestion/domain_data.json`
+- Related NIST snippets are fetched from `nist_controls` collection.
+
+### B. Gap Analysis
+- Start: `POST /api/analyze-gaps`
+- Poll: `GET /api/analyze-gaps`
+
+Request body:
+```json
+{
+  "data": [
+    {
+      "domain": "ISMS",
+      "text": ["..."],
+      "related_nist_policies": [{ "id": "...", "content": "..." }]
+    }
+  ],
+  "mode": "auto | rapid | deep"
+}
+```
+
+Mode behavior in gap analysis service:
+- `deep` -> `mistral`
+- `auto` / `rapid` -> `phi4-mini`
+
+### C. Revised Policy (Streaming)
+- Endpoint: `POST /api/revised-policy`
+- Request:
+```json
+{
+  "text": "original policy text",
+  "gap_analysis": "combined gaps text",
+  "mode": "auto | rapid | deep"
+}
+```
+
+Mode behavior:
+- `rapid` -> `phi4-mini`
+- `auto` / `deep` -> `mistral`
+
+### D. Recheck Revised Policy
+- Endpoint: `POST /api/recheck-policy`
+- Request:
+```json
+{
+  "revised_policy": "...",
+  "gaps": "...",
+  "mode": "auto | rapid | deep"
+}
+```
+
+Mode behavior:
+- `auto` / `rapid` / `deep` -> `phi4-mini`
+
+### E. Roadmap (Streaming)
+- Endpoint: `POST /api/get-roadmap`
+- Request:
+```json
+{
+  "input_policy": "...",
+  "revised_policy": "...",
+  "mode": "auto | rapid | deep"
+}
+```
+
+Mode behavior:
+- `rapid` -> `phi4-mini`
+- `auto` / `deep` -> `mistral`
+
+## Client-Side Persistence
+The frontend stores workflow state in `localStorage`:
+- `mode`
+- `uploadedDomains`
+- `extractedText`
+- `fileId`
+- `gapAnalysis:<fileId>`
+- `revisedPolicy:<fileId>`
+- `recheckGaps:<fileId>`
+- `roadmap:<fileId>`
 
 ## Quick Health Checks
-- Verify Ollama model is available:
-   ```bash
-   ollama list
-   ```
-- Verify backend LLM connectivity:
-   ```bash
-   cd backend
-   python -m test_scripts.test_ollama
-   ```
+```bash
+# Ollama service + models
+ollama list
 
-## Project Structure
-- `src/app/`: Next.js application pages and layout
-- `src/components/`: Reusable UI components
-- `src/features/`: Feature-specific components (e.g., upload, analysis)
-- `backend/`: FastAPI application, LLM helpers, and routes
-- `backend/main.py`: Backend entry point
-- `package.json`: Frontend dependencies and scripts
+# backend root health
+curl http://localhost:8000/
+
+# app LLM check route
+curl http://localhost:8000/check-llm
+```
+
+## Project Structure (Top Level)
+- `src/` - React frontend
+- `backend/` - FastAPI backend and AI pipeline
+- `backend/routes/` - API endpoints
+- `backend/services/` - chunking/classification/gap processing logic
+- `backend/helpers/` - PDF, LLM, embeddings, Chroma helpers
+- `backend/ingestion/` - domain and NIST ingestion scripts/data

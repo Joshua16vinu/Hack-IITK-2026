@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from helpers.llm_helper import call_llm
 from helpers.logger import get_logger
 from prompts.recheck_policy import RECHECK_POLICY_PROMPT
-from constants import MISTRAL_MODEL, PHI_MODEL
+from constants import MISTRAL_MODEL, PHI_MODEL, TIME
 
 class RecheckRequest(BaseModel):
     revised_policy: str
@@ -68,7 +68,7 @@ async def recheck_policy(request: RecheckRequest):
     if request.mode == "deep":
         time = None
     else:
-        time = 1
+        time = TIME
     
     MODEL_NAME = PHI_MODEL
 
