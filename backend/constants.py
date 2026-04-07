@@ -9,7 +9,7 @@ MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
 MISTRAL_MODEL = "mistral"
 PHI_MODEL = "phi4-mini"
-TIME = 2
+TIME = 60
 
 
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"

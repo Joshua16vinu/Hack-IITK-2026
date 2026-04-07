@@ -50,7 +50,7 @@ export default function RoadmapPage() {
 
     if (!originalText || !revisedText) {
       setErrorText(
-        "Required data (original policy or revised policy) is missing. Please make sure you have generated the revised policy first.",
+        "Required data could not be found. Please start by uploading a policy."
       );
       return;
     }
@@ -180,10 +180,10 @@ export default function RoadmapPage() {
             action={
               !hasData && (
                 <button
-                  onClick={() => navigate("/revised-policy")}
+                  onClick={() => navigate("/")}
                   className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-bold hover:bg-red-200 transition-colors"
                 >
-                  Go back
+                  Go to Upload
                 </button>
               )
             }
