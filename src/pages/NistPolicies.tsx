@@ -17,10 +17,7 @@ import {
   RotateCcw,
   Layers,
   Target,
-  Lock,
-  Activity,
-  Zap,
-  Database,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -86,10 +83,6 @@ const nistFunctions = [
   },
 ];
 
-// ─── NIST Domains (from data) ─────────────────────────────────────────────────
-
-const domainIcons = [Shield, Database, Activity, Zap];
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function NistPoliciesPage() {
@@ -143,7 +136,7 @@ export default function NistPoliciesPage() {
             NIST Policies
           </h1>
           <p className="text-slate-500 text-base max-w-2xl">
-            Explore all 6 NIST CSF 2.0 Core Functions and 4 Security Domains — search, browse, and download official policy templates aligned with NIST SP 800-53.
+            Explore all 6 Core Functions and 4 Security Domains — search, browse, and download official policy templates aligned with NIST SP 800-53.
           </p>
         </motion.div>
 
@@ -205,7 +198,7 @@ export default function NistPoliciesPage() {
           <div className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4 text-slate-400" />
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-              NIST CSF 2.0 — 6 Core Functions
+              Core Functions
             </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -255,7 +248,7 @@ export default function NistPoliciesPage() {
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-slate-400" />
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-              4 Security Domains
+              Security Domains
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -304,7 +297,7 @@ export default function NistPoliciesPage() {
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-slate-400" />
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">
-              All Policy Templates
+              Policy Templates
             </h2>
           </div>
           <div className="relative">

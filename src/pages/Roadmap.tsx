@@ -15,7 +15,7 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { useToast } from "@/components/ui/Toast";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { GeneratorPanel } from "@/components/ui/GeneratorPanel";
-import { downloadTextAsPdf } from "@/lib/pdf";
+import { downloadTextAsPdf, downloadConsolidatedPdf } from "@/lib/pdf";
 import { generateRoadmap } from "@/services/api";
 
 export default function RoadmapPage() {
@@ -29,6 +29,7 @@ export default function RoadmapPage() {
   const autoStartRef = useRef(false);
   const [inputPolicy, setInputPolicy] = useState("");
   const [revisedPolicy, setRevisedPolicy] = useState("");
+  const [gapContent, setGapContent] = useState("");
 
   const contentEndRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +58,28 @@ export default function RoadmapPage() {
 
     setInputPolicy(originalText);
     setRevisedPolicy(revisedText);
+
+    // Build gap content string from cached gap analysis
+    const gapCacheRaw = fileId ? localStorage.getItem(`gapAnalysis:${fileId}`) : null;
+    if (gapCacheRaw) {
+      try {
+        const parsed = JSON.parse(gapCacheRaw);
+        const results = Array.isArray(parsed?.results) ? parsed.results : [];
+        const combined = results
+          .map((r: { domain: string; gaps?: string[] }, i: number) => {
+            const gapsText =
+              r.gaps && r.gaps.length > 0
+                ? r.gaps.map((g, gi) => `${gi + 1}. ${g}`).join("\n")
+                : "No gaps identified";
+            return `${i + 1}. Domain: ${r.domain}\n\n${gapsText}`;
+          })
+          .join("\n\n----------------------------------------\n\n");
+        setGapContent(combined);
+      } catch {
+        // ignore parse errors — consolidated PDF will skip gap section
+      }
+    }
+
     setHasData(true);
   }, []);
 
@@ -137,6 +160,15 @@ export default function RoadmapPage() {
     });
   };
 
+  const handleDownloadConsolidatedPdf = () => {
+    downloadConsolidatedPdf({
+      gapContent,
+      revisedPolicyContent: revisedPolicy,
+      roadmapContent: streamedText,
+      fileName: "consolidated-compliance-report",
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#f5f6fa]">
       <AppTopBar
@@ -157,6 +189,14 @@ export default function RoadmapPage() {
             >
               <Download className="w-4 h-4" />
               Download Roadmap
+            </button>
+            <button
+              onClick={handleDownloadConsolidatedPdf}
+              disabled={!streamedText || loading}
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Download Full Report
             </button>
           </>
         }
