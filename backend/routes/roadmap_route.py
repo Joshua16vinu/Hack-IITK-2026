@@ -10,7 +10,7 @@ from prompts.construct_roadmap import ROADMAP_PROMPT, ROADMAP_SYSTEM_PROMPT
 
 class RoadmapRequest(BaseModel):
     input_policy: str
-    revised_policy: str
+    gaps: str
     mode: str
 
 roadmap_router = APIRouter()
@@ -18,11 +18,11 @@ logger = get_logger(__name__)
 
 @roadmap_router.post("/get-roadmap")
 async def roadmap(request: RoadmapRequest):
-    if not request.input_policy or not request.revised_policy:
-        logger.warning("Roadmap request rejected because input_policy or revised_policy was missing")
+    if not request.input_policy or not request.gaps:
+        logger.warning("Roadmap request rejected because input_policy or gaps was missing")
         raise HTTPException(
             status_code=400,
-            detail=json.dumps({"message": "Missing 'input_policy' or 'revised_policy'"})
+            detail=json.dumps({"message": "Missing 'input_policy' or 'gaps'"})
         )
         
     if request.mode == "rapid":
@@ -34,7 +34,7 @@ async def roadmap(request: RoadmapRequest):
         logger.info("Starting roadmap generation")
         llm_response = stream_llm(ROADMAP_SYSTEM_PROMPT, ROADMAP_PROMPT.format(
             original_policy=request.input_policy, 
-            revised_policy=request.revised_policy
+            gaps=request.gaps
         ), MODEL_NAME)
     except Exception as e:
         logger.exception("Roadmap generation failed")

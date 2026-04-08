@@ -93,7 +93,7 @@ export default function RoadmapPage() {
     try {
       const response = await generateRoadmap({
         inputPolicy,
-        revisedPolicy,
+        gaps: gapContent,
       });
 
       const body = response.body;
@@ -139,7 +139,7 @@ export default function RoadmapPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasData, inputPolicy, revisedPolicy, setToast]);
+  }, [hasData, inputPolicy, setToast, gapContent]);
 
   useEffect(() => {
     if (hasData && !autoStartRef.current) {

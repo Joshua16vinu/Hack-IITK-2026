@@ -78,7 +78,7 @@ export interface RecheckPolicyResponse {
 
 export interface RoadmapRequest {
   inputPolicy: string;
-  revisedPolicy: string;
+  gaps: string;
 }
 
 export interface PdfDownloadOptions {
