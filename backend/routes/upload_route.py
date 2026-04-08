@@ -1,8 +1,8 @@
 import os
 import json
-
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from typing import Optional
+import uuid
 
 from helpers.pdf_helper import extract_text_from_pdf, generate_file_id
 from helpers.chunking_helper import sentence_based_chunking
@@ -44,7 +44,7 @@ async def upload_pdf(
         logger.exception("Failed to read uploaded file")
         raise HTTPException(status_code=500, detail="Failed to read file")
 
-    file_id = generate_file_id(contents, domain)
+    file_id = uuid.uuid4()
     logger.info("Processing file_id=%s domain=%s", file_id, domain or "auto")
 
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)

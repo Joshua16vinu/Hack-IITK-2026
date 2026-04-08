@@ -4,11 +4,19 @@ export interface DomainEntry {
   domain: string;
   text: string | string[];
   related_nist_policies: NistPolicyEntry[];
+  retrieved_from?: RetrievedFromEntry;
 }
 
 export interface NistPolicyEntry {
   id: string;
   content: string;
+  policy_template?: string | null;
+}
+
+export interface RetrievedFromEntry {
+  functions: string[];
+  sub_functions: string[];
+  policy_templates: string[];
 }
 
 export interface GapResult {

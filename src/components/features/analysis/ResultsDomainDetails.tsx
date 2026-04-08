@@ -6,6 +6,9 @@ import {
   BookOpen,
   FileText,
   ShieldCheck,
+  Layers,
+  GitBranch,
+  ScrollText,
 } from "lucide-react";
 import { StreamingText } from "./StreamingText";
 import type { ResultsDomainDetailsProps } from "@/types";
@@ -178,6 +181,64 @@ export function ResultsDomainDetails({
             </div>
           )}
 
+          {domain.retrieved_from && (
+            <div className="rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white overflow-hidden">
+              {/* Header row */}
+              <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-100">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Context used for this domain
+                </span>
+              </div>
+
+              {/* All chips inline */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+                {domain.retrieved_from.functions.map((fn) => (
+                  <span
+                    key={fn}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-md border border-indigo-100"
+                  >
+                    <Layers className="w-3 h-3 opacity-70" />
+                    {fn}
+                  </span>
+                ))}
+
+                {domain.retrieved_from.functions.length > 0 &&
+                  domain.retrieved_from.sub_functions.length > 0 && (
+                    <span className="text-slate-300 text-sm select-none">
+                      |
+                    </span>
+                  )}
+
+                {domain.retrieved_from.sub_functions.map((sf) => (
+                  <span
+                    key={sf}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-violet-50 text-violet-700 text-[11px] font-bold rounded-md border border-violet-100"
+                  >
+                    <GitBranch className="w-3 h-3 opacity-70" />
+                    {sf}
+                  </span>
+                ))}
+
+                {domain.retrieved_from.sub_functions.length > 0 &&
+                  domain.retrieved_from.policy_templates.length > 0 && (
+                    <span className="text-slate-300 text-sm select-none">
+                      |
+                    </span>
+                  )}
+
+                {domain.retrieved_from.policy_templates.map((pt) => (
+                  <span
+                    key={pt}
+                    className="flex items-center gap-1 px-2.5 py-1 bg-teal-50 text-teal-700 text-[11px] font-bold rounded-md border border-teal-100"
+                  >
+                    <ScrollText className="w-3 h-3 opacity-70" />
+                    {pt}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeNist > 0 ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between px-2">
@@ -218,10 +279,16 @@ export function ResultsDomainDetails({
                           <BookOpen className="w-5 h-5" />
                         </div>
                         <div className="flex-1 space-y-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap justify-between">
                             <span className="px-3 py-1 bg-slate-100 group-hover:bg-blue-50 group-hover:text-blue-700 text-slate-500 text-[10px] font-black tracking-widest uppercase rounded-lg transition-colors">
                               CONTROL {String(policyIndex + 1).padStart(2, "0")}
                             </span>
+                            {policy.policy_template && (
+                              <span className="flex items-center gap-1 px-3 py-1 bg-teal-50 text-teal-700 text-[10px] font-bold tracking-wide rounded-lg border border-teal-100">
+                                <ScrollText className="w-3 h-3" />
+                                {policy.policy_template}
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm md:text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap">
                             <StreamingText

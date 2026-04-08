@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 from fastapi import APIRouter, Request, BackgroundTasks
 
@@ -11,6 +12,7 @@ logger = get_logger(__name__)
 class NistPolicy(BaseModel):
     id: str
     content: str
+    policy_template: Optional[str] = None
 
 class DataItem(BaseModel):
     domain: str

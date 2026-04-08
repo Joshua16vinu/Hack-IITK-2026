@@ -31,3 +31,4 @@ SEMANTIC_WEIGHT = 0.7
 KEYWORD_WEIGHT = 0.3
 DOMAIN_GAP_THRESHOLD = 0.05
 DOMAIN_DATA_PATH = os.path.join(BACKEND_BASE_DIR, "ingestion", "domain_data.json")
+FUNCTION_DATA_PATH = os.path.join(BACKEND_BASE_DIR, "ingestion", "function_data.json")

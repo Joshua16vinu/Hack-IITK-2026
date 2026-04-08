@@ -320,6 +320,7 @@ export default function ResultsPage() {
           string,
           DomainEntry["related_nist_policies"][number]
         >;
+        retrieved_from?: DomainEntry["retrieved_from"];
       }
     >();
 
@@ -346,6 +347,11 @@ export default function ResultsPage() {
           existing.relatedNistById.set(policy.id, policy);
         }
 
+        // Keep the first retrieved_from encountered for this domain
+        if (!existing.retrieved_from && domain.retrieved_from) {
+          existing.retrieved_from = domain.retrieved_from;
+        }
+
         continue;
       }
 
@@ -363,6 +369,7 @@ export default function ResultsPage() {
         domain: domain.domain,
         text: [...domainTexts],
         relatedNistById,
+        retrieved_from: domain.retrieved_from,
       });
     }
 
@@ -370,6 +377,7 @@ export default function ResultsPage() {
       domain: entry.domain,
       text: entry.text,
       related_nist_policies: Array.from(entry.relatedNistById.values()),
+      retrieved_from: entry.retrieved_from,
     }));
   }, [domains]);
 
