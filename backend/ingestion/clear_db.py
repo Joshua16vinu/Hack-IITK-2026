@@ -1,8 +1,7 @@
 from helpers.chroma_helper import get_chroma_client, delete_chroma_collection
-from constants import NIST_COLLECTION, KB_COLLECTION
+from constants import NIST_COLLECTION, DOMAIN_COLLECTION, FUNCTION_COLLECTION
 
-def clear_chroma_collection(collection_name):
-    client = get_chroma_client()
+def clear_chroma_collection(client, collection_name):
     collection = client.get_or_create_collection(collection_name)
     count = collection.count()
     
@@ -13,5 +12,8 @@ def clear_chroma_collection(collection_name):
         print("Collection", collection_name, "is already empty. No action needed.")
     
 if __name__ == "__main__":
-    clear_chroma_collection(NIST_COLLECTION)
-    clear_chroma_collection(KB_COLLECTION)
+    client = get_chroma_client()
+    
+    # clear_chroma_collection(client, NIST_COLLECTION)
+    # clear_chroma_collection(client, DOMAIN_COLLECTION)
+    clear_chroma_collection(client, FUNCTION_COLLECTION)

@@ -24,7 +24,8 @@ CHUNK_OVERLAP = 30
 
 
 NIST_COLLECTION = "nist_controls"
-KB_COLLECTION = "domain_kb"
+DOMAIN_COLLECTION = "domain_kb"
+FUNCTION_COLLECTION = "function_kb"
 
 SEMANTIC_WEIGHT = 0.7
 KEYWORD_WEIGHT = 0.3

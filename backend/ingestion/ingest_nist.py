@@ -36,7 +36,7 @@ for item in nist_data:
         ids=[item["id"]],
         documents=[item["text"]],
         metadatas=[{
-            "domain": item.get("domain"),
+            "policy_templates": item.get("policy_templates"),
             "source": item.get("source")
         }],
         embeddings=[embedding]

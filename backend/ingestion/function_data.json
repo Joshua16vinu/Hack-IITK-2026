@@ -1,7 +1,7 @@
 [
     {
         "domain": "ISMS",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.OC",
         "sub-function-label": "Organizational Context",
         "nist_subcategories": [
@@ -53,7 +53,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.RM",
         "sub-function-label": "Risk Management Strategy",
         "nist_subcategories": [
@@ -105,7 +105,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.RR",
         "sub-function-label": "Roles, Responsibilities, and Authorities",
         "nist_subcategories": [
@@ -155,7 +155,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.PO",
         "sub-function-label": "Policy",
         "nist_subcategories": [
@@ -198,7 +198,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.OV",
         "sub-function-label": "Oversight",
         "nist_subcategories": [
@@ -242,7 +242,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "GV",
+        "function": "Govern",
         "sub-function": "GV.SC",
         "sub-function-label": "Cybersecurity Supply Chain Risk Management",
         "nist_subcategories": [
@@ -302,7 +302,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "ID",
+        "function": "Identify",
         "sub-function": "ID.AM",
         "sub-function-label": "Asset Management",
         "nist_subcategories": [
@@ -366,7 +366,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "ID",
+        "function": "Identify",
         "sub-function": "ID.RA",
         "sub-function-label": "Risk Assessment",
         "nist_subcategories": [
@@ -437,7 +437,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "ID",
+        "function": "Identify",
         "sub-function": "ID.IM",
         "sub-function-label": "Improvement",
         "nist_subcategories": [
@@ -487,7 +487,7 @@
     },
     {
         "domain": "Identity & Access Management",
-        "function": "PR",
+        "function": "Protect",
         "sub-function": "PR.AA",
         "sub-function-label": "Identity Management and Access Control",
         "nist_subcategories": [
@@ -554,7 +554,7 @@
     },
     {
         "domain": "ISMS",
-        "function": "PR",
+        "function": "Protect",
         "sub-function": "PR.AT",
         "sub-function-label": "Awareness and Training",
         "nist_subcategories": [
@@ -606,7 +606,7 @@
     },
     {
         "domain": "Data Privacy & Security",
-        "function": "PR",
+        "function": "Protect",
         "sub-function": "PR.DS",
         "sub-function-label": "Data Security",
         "nist_subcategories": [
@@ -667,7 +667,7 @@
     },
     {
         "domain": "Patch Management",
-        "function": "PR",
+        "function": "Protect",
         "sub-function": "PR.PS",
         "sub-function-label": "Platform Security",
         "nist_subcategories": [
@@ -721,7 +721,7 @@
     },
     {
         "domain": "Data Privacy & Security",
-        "function": "PR",
+        "function": "Protect",
         "sub-function": "PR.IR",
         "sub-function-label": "Technology Infrastructure Resilience",
         "nist_subcategories": [
@@ -781,7 +781,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "DE",
+        "function": "Detect",
         "sub-function": "DE.AE",
         "sub-function-label": "Adverse Event Analysis",
         "nist_subcategories": [
@@ -840,7 +840,7 @@
     },
     {
         "domain": "Patch Management",
-        "function": "DE",
+        "function": "Detect",
         "sub-function": "DE.CM",
         "sub-function-label": "Continuous Monitoring",
         "nist_subcategories": [
@@ -895,7 +895,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RS",
+        "function": "Respond",
         "sub-function": "RS.MA",
         "sub-function-label": "Incident Management",
         "nist_subcategories": [
@@ -943,7 +943,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RS",
+        "function": "Respond",
         "sub-function": "RS.CO",
         "sub-function-label": "Incident Response Reporting and Communication",
         "nist_subcategories": [
@@ -989,7 +989,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RS",
+        "function": "Respond",
         "sub-function": "RS.AN",
         "sub-function-label": "Incident Analysis",
         "nist_subcategories": [
@@ -1038,7 +1038,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RS",
+        "function": "Respond",
         "sub-function": "RS.MI",
         "sub-function-label": "Incident Mitigation",
         "nist_subcategories": [
@@ -1082,7 +1082,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RC",
+        "function": "Recovery",
         "sub-function": "RC.RP",
         "sub-function-label": "Incident Recovery Plan Execution",
         "nist_subcategories": [
@@ -1136,7 +1136,7 @@
     },
     {
         "domain": "Risk Management",
-        "function": "RC",
+        "function": "Recovery",
         "sub-function": "RC.CO",
         "sub-function-label": "Incident Recovery Communication",
         "nist_subcategories": [
