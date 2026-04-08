@@ -134,7 +134,7 @@ export const getRemainingGaps = async ({ revisedPolicy, gaps }: RecheckPolicyReq
   });
 }
 
-export const generateRoadmap = async ({ inputPolicy, revisedPolicy }: RoadmapRequest) => {
+export const generateRoadmap = async ({ inputPolicy, gaps }: RoadmapRequest) => {
   return requestStream(`${API_BASE_URL}/get-roadmap`, {
     method: "POST",
     headers: {
@@ -142,7 +142,7 @@ export const generateRoadmap = async ({ inputPolicy, revisedPolicy }: RoadmapReq
     },
     body: JSON.stringify({
       input_policy: inputPolicy,
-      revised_policy: revisedPolicy,
+      gaps,
       mode: getMode()
     }),
   });
