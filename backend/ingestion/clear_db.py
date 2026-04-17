@@ -14,6 +14,6 @@ def clear_chroma_collection(client, collection_name):
 if __name__ == "__main__":
     client = get_chroma_client()
     
-    # clear_chroma_collection(client, NIST_COLLECTION)
-    # clear_chroma_collection(client, DOMAIN_COLLECTION)
+    clear_chroma_collection(client, NIST_COLLECTION)
+    clear_chroma_collection(client, DOMAIN_COLLECTION)
     clear_chroma_collection(client, FUNCTION_COLLECTION)
